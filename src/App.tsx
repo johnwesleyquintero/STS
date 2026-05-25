@@ -27,6 +27,7 @@ import {
   WifiOff,
   History,
   X,
+  Plus,
   User as UserIcon,
 } from 'lucide-react';
 
@@ -948,7 +949,7 @@ export default function App() {
                 setSessionMode(null);
                 localStorage.removeItem('sts_session_mode');
               }}
-              className="text-[10px] bg-amber-605 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg cursor-pointer flex-shrink-0 ml-auto transition-all shadow-sm"
+              className="text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg cursor-pointer flex-shrink-0 ml-auto transition-all shadow-sm"
             >
               Connect Cloud Database
             </button>
@@ -994,8 +995,9 @@ export default function App() {
           <button
             id="top-cta-new-ticket-btn"
             onClick={handleOpenNewTicketDrawer}
-            className="px-4 py-2 bg-blue-605 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 cursor-pointer shadow-md hover:shadow-lg transition-all transform active:scale-[0.98]"
           >
+            <Plus className="w-3.5 h-3.5" />
             Create Ticket
           </button>
         </div>

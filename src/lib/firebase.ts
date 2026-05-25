@@ -12,8 +12,8 @@ provider.addScope('https://www.googleapis.com/auth/drive.file');
 
 // Flag to indicate if we are in the middle of a sign-in flow
 let isSigningIn = false;
-// Cache the access token in memory
-let cachedAccessToken: string | null = null;
+// Cache the access token in memory/localStorage for reload persistence
+let cachedAccessToken: string | null = typeof window !== 'undefined' ? localStorage.getItem('sts_oauth_token') : null;
 
 // Initialize auth state listener
 export const initAuth = (
@@ -27,10 +27,16 @@ export const initAuth = (
       } else if (!isSigningIn) {
         // Token might have expired or need to re-authenticate, or wait for popup
         cachedAccessToken = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('sts_oauth_token');
+        }
         if (onAuthFailure) onAuthFailure();
       }
     } else {
       cachedAccessToken = null;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('sts_oauth_token');
+      }
       if (onAuthFailure) onAuthFailure();
     }
   });
@@ -46,6 +52,9 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
       throw new Error('Failed to retrieve access token from Google Auth Provider');
     }
     cachedAccessToken = credential.accessToken;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sts_oauth_token', cachedAccessToken);
+    }
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
     console.error('Sign in error:', error);
@@ -64,4 +73,7 @@ export const getAccessToken = async (): Promise<string | null> => {
 export const logout = async () => {
   await auth.signOut();
   cachedAccessToken = null;
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('sts_oauth_token');
+  }
 };
