@@ -499,6 +499,57 @@ export default function App() {
     setSelectedTicket(null);
   };
 
+  // Bulk / Mass Ticket Updates
+  const handleBulkUpdateTickets = (ids: string[], updates: Partial<Ticket>) => {
+    const now = new Date().toISOString();
+    const updatedTickets = tickets.map((t) => {
+      if (ids.includes(t.id)) {
+        let updatedTags = t.tags;
+        if (updates.tags) {
+          // If tags are passed as updates, append unique ones
+          updatedTags = Array.from(new Set([...t.tags, ...updates.tags]));
+        }
+        return {
+          ...t,
+          ...updates,
+          tags: updatedTags,
+          updatedAt: now,
+        };
+      }
+      return t;
+    });
+
+    if (sessionMode === 'offline') {
+      saveOfflineTicketsAndLogs(updatedTickets);
+      addActivityLog('SYSTEM', 'BULK_UPDATE', `Bulk updated ${ids.length} tickets with details: ${JSON.stringify(updates)}`);
+      addToast(`Bulk updated ${ids.length} tickets successfully!`);
+    } else {
+      setTickets(updatedTickets);
+      addActivityLog('SYSTEM', 'BULK_UPDATE', `Bulk updated ${ids.length} tickets with details: ${JSON.stringify(updates)}`);
+      addToast(`Syncing bulk updates for ${ids.length} tickets...`, 'info');
+      pushToGSheet(updatedTickets).then(() => {
+        addToast(`Bulk update saved to Google Sheets!`);
+      });
+    }
+  };
+
+  const handleBulkDeleteTickets = (ids: string[]) => {
+    const updatedTickets = tickets.filter((t) => !ids.includes(t.id));
+
+    if (sessionMode === 'offline') {
+      saveOfflineTicketsAndLogs(updatedTickets);
+      addActivityLog('SYSTEM', 'BULK_DELETE', `Bulk deleted ${ids.length} tickets.`);
+      addToast(`Bulk deleted ${ids.length} tickets successfully.`);
+    } else {
+      setTickets(updatedTickets);
+      addActivityLog('SYSTEM', 'BULK_DELETE', `Bulk deleted ${ids.length} tickets from queue.`);
+      addToast(`Deleting ${ids.length} tickets from GSheets...`, 'info');
+      pushToGSheet(updatedTickets).then(() => {
+        addToast(`Bulk deletion synced to Google Sheets!`);
+      });
+    }
+  };
+
   const handleManualSyncPress = () => {
     if (sessionMode === 'offline') {
       loadOfflineData();
@@ -879,6 +930,8 @@ export default function App() {
               tickets={tickets}
               onSelectTicket={handleOpenEditTicketDrawer}
               onUpdateStatus={handleUpdateTicketStatus}
+              onBulkUpdate={handleBulkUpdateTickets}
+              onBulkDelete={handleBulkDeleteTickets}
             />
           ) : (
             <KanbanBoard

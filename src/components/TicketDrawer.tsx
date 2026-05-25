@@ -20,8 +20,10 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
   const [tagsInput, setTagsInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [source, setSource] = useState<TicketSource>('Manual');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
+    setShowDeleteConfirm(false);
     if (ticket) {
       setTitle(ticket.title);
       setType(ticket.type);
@@ -96,12 +98,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
 
   const handleDeleteClick = () => {
     if (!ticket) return;
-    const confirmed = window.confirm(
-      `Delete Ticket ${ticket.id}: "${ticket.title}"? This action cannot be undone.`
-    );
-    if (confirmed) {
-      onDelete(ticket.id);
-    }
+    setShowDeleteConfirm(!showDeleteConfirm);
   };
 
   const ticketTypes: TicketType[] = ['Task', 'Ops', 'Bug', 'Lead', 'Catalog', 'System'];
@@ -146,7 +143,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                   <button
                     id="drawer-delete-btn"
                     type="button"
-                    onClick={handleDeleteClick}
+                    onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
                     className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors cursor-pointer"
                     title="Delete Ticket"
                   >
@@ -162,6 +159,45 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                 </button>
               </div>
             </div>
+
+            {/* Danger Deletion Custom Confirmation Bar */}
+            <AnimatePresence>
+              {showDeleteConfirm && (
+                <motion.div
+                  id="drawer-delete-confirm-bar"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.18, ease: 'easeInOut' }}
+                  className="bg-rose-50 dark:bg-rose-950/20 border-b border-rose-100 dark:border-rose-900/40 overflow-hidden"
+                >
+                  <div className="p-4 flex flex-col gap-2">
+                    <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                      Are you absolutely sure you want to delete Ticket {ticket?.id}? This action is irreversible.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (ticket) onDelete(ticket.id);
+                        }}
+                        className="p-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold cursor-pointer transition-all shadow-xs flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Confirm Delete
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="p-2 py-1 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-bold text-slate-500 hover:text-slate-700 transition-all cursor-pointer shadow-2xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex-1 p-6 space-y-6 flex flex-col">
