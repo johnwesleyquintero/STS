@@ -31,6 +31,36 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
+const ScaleSmartLogo = ({ size = 24, className = "" }: { size?: number; className?: string }) => {
+  return (
+    <svg 
+      viewBox="0 0 128 128" 
+      width={size} 
+      height={size} 
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2563eb" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+      </defs>
+      <rect x="12" y="12" width="104" height="104" rx="26" fill="url(#logo-grad)" />
+      <path 
+        d="M44 64 L58 78 L86 46" 
+        stroke="#ffffff" 
+        strokeWidth="11" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
+      <circle cx="32" cy="32" r="5" fill="#ffffff" opacity="0.6" />
+      <circle cx="96" cy="32" r="5" fill="#ffffff" opacity="0.6" />
+    </svg>
+  );
+};
+
 const SAMPLE_TICKETS: Ticket[] = [
   {
     id: 'STS-1001',
@@ -592,8 +622,8 @@ export default function App() {
 
           {/* Icon Logo */}
           <div className="space-y-3 text-center">
-            <div className="mx-auto w-12 h-12 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-105 dark:border-blue-900/40 flex items-center justify-center shadow-xs">
-              <Sparkles className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="mx-auto w-12 h-12 flex items-center justify-center">
+              <ScaleSmartLogo size={46} />
             </div>
             <h1 className="text-2xl font-display font-bold tracking-tight text-slate-900 dark:text-slate-50 animate-fade-in">
               ScaleSmart STS
@@ -753,10 +783,8 @@ export default function App() {
       <header className="bg-white/90 backdrop-blur-md dark:bg-slate-900/95 border-b border-slate-200/80 dark:border-slate-805 px-6 py-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 sticky top-0 z-35 shadow-xs" id="sts-app-header">
         
         {/* Title, Brand, and Mode status */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600 text-white rounded-lg shadow-sm">
-            <Sparkles className="w-5 h-5" />
-          </div>
+        <div className="flex items-center gap-2">
+          <ScaleSmartLogo size={36} />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-display font-bold text-slate-800 dark:text-slate-100">
