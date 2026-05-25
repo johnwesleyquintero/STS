@@ -6,6 +6,61 @@ Live Production URL: **[https://scalesmart-sts.vercel.app/](https://scalesmart-s
 
 ---
 
+## ⚡ Operational Philosophy
+
+ScaleSmart STS is built upon three foundational pillars of execution design:
+
+1. **Information Density without Cognitive Load:** Every tag, priority label, and ID is styled to stand out without competing for visual dominance. Complex queues become readable at a glance.
+2. **Tactile Ergonomics (Visual Flow):** Multi-select bulk panels float gracefully, status transitions feel weighted, and views transition intelligently to preserve the state of an active workspace.
+3. **Resilient Continuations (Degraded Mode Execution):** Operations do not stop when the network crawls or drops. High-risk actions fail gracefully, storing modifications locally, ready for immediate, verified synchronization.
+
+---
+
+## 🏗️ Architecture Overview
+
+STS operates on a decoupled, lightweight runtime designed for peak portability and zero backend code maintenance:
+
+```text
+                        ┌──────────────────────────────────────────────┐
+                        │              ScaleSmart STS Web              │
+                        │            (React + Framer Motion)           │
+                        └──────────────┬────────────────┬──────────────┘
+                                       │                │
+                        (Authed Sync)  ▼                ▼  (State Cache)
+                    ┌─────────────────────┐          ┌─────────────────────┐
+                    │ Firebase Gateway &  │          │    Local Storage    │
+                    │   Google Drive /    │          │    Fallback Cache   │
+                    │  Sheets Databases   │          │ (Tickets & History) │
+                    └─────────────────────┘          └─────────────────────┘
+```
+
+- **Runtime Layer (React & Vite):** Maintains an active high-performance client state with instant sorting, batch selection math, and real-time filtration.
+- **Relay Synchronization (Google Sheets Database):** Automatically discovers or initializes user-owned spreadsheets in their Google Drive directory using standard REST queries. Zero databases to provision.
+- **Persistent Fallback Storage:** Synchronizes local data cache instances instantly. Whenever operations shift offline, the system seamlessly swaps database states, guaranteeing continuous execution.
+
+---
+
+## 🔄 Ticket Lifecycle & Transitions
+
+Tickets follow a rigorous operational delivery pipeline to ensure execution velocity:
+
+```text
+  [ OPEN ] ──(In Progress)──► [ IN_PROGRESS ] ──(Needs Clarification)──► [ BLOCKED ]
+     │                              │                                       │
+     │                              ├──(Ready for QA)──► [ REVIEW ]         │
+     │                              ▲                      │                │
+     │                              │                      │                │
+     └─────────(Reassign)───────────┴──────(Requires Fix)──┴────(Resolve)───▼──► [ RESOLVED ]
+```
+
+- **`OPEN`:** New incoming visual logs and incoming requests needing assessment.
+- **`IN_PROGRESS`:** Active tickets under immediate execution.
+- **`BLOCKED`:** Operational roadblocks requiring immediate lead/client review.
+- **`REVIEW`:** Complete work pending validation and sign-off.
+- **`RESOLVED`:** Completed, verified execution lines fully pushed out.
+
+---
+
 ## 🛠️ Key Capabilities
 
 - **Fluid Dual-View Navigation:** Toggle dynamically between a comprehensive, filterable **Ticket Queue List View** with multi-select bulk operations and a visual, tactile **Kanban Board** with drag-and-drop.
