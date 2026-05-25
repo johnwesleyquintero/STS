@@ -1,6 +1,6 @@
 {
-  "name": "ScaleSmart Ticketing System",
-  "description": "A lightweight visual execution queue and Jira-inspired task tracker for fast operational and personal tracking.",
+  "name": "ScaleSmart STS",
+  "description": "An elegant, lightweight visual execution queue & task tracker designed for high-velocity operation workflows. Live at https://scalesmart-sts.vercel.app/",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
