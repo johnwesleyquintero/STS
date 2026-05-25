@@ -88,6 +88,7 @@ export default function App() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [sessionMode, setSessionMode] = useState<'offline' | 'online' | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Tickets & History logs state
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -325,6 +326,7 @@ export default function App() {
   // Login handler
   const handleLoginClick = async () => {
     setIsAuthenticating(true);
+    setAuthError(null);
     try {
       const authResponse = await googleSignIn();
       if (authResponse) {
@@ -334,9 +336,15 @@ export default function App() {
         setSessionMode('online');
         localStorage.setItem('sts_session_mode', 'online');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      addToast('Google Auth failed or dismissed.', 'error');
+      if (err && (err.code === 'auth/unauthorized-domain' || (err.message && err.message.includes('unauthorized-domain')))) {
+        setAuthError('unauthorized-domain');
+        addToast('Sign-In Fail: unauthorized-domain. Fix steps displayed below.', 'error');
+      } else {
+        setAuthError(err?.message || String(err));
+        addToast('Google Auth failed or dismissed.', 'error');
+      }
     } finally {
       setIsAuthenticating(false);
     }
@@ -629,6 +637,75 @@ export default function App() {
               <WifiOff className="w-3.5 h-3.5 text-slate-500" />
               Isolated Preview Mode (Offline)
             </button>
+
+            {/* Premium, Interactive Firebase Auth Diagnostic Help Card */}
+            {authError && (
+              <div className="mt-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-150 dark:border-rose-900/40 text-left space-y-3" id="auth-error-panel">
+                <div className="flex gap-2">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
+                    !
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                      {authError === 'unauthorized-domain' ? 'Firebase Unauthorized Domain' : 'Sign-In Error'}
+                    </h5>
+                    <p className="text-[10px] text-rose-650 dark:text-rose-405 mt-1 leading-normal">
+                      {authError === 'unauthorized-domain'
+                        ? 'Your Firebase Authentication setup blocked this domain because it is not listed in your OAuth Authorized Domains list.'
+                        : authError}
+                    </p>
+                  </div>
+                </div>
+
+                {authError === 'unauthorized-domain' && (
+                  <div className="space-y-2.5 border-t border-rose-100 dark:border-rose-900/30 pt-2.5">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-normal">
+                      To enable live GSheets matching, add <code className="font-mono bg-rose-100/60 dark:bg-rose-950/80 px-1 py-0.5 rounded font-bold text-rose-700 dark:text-rose-300">{window.location.hostname}</code> to your Firebase project authorized domains list.
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(window.location.hostname);
+                            addToast('Domain copied to clipboard!');
+                          } catch (e) {
+                            addToast('Failed to copy. Type it manually.', 'error');
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded text-[9.5px] font-bold text-slate-700 dark:text-slate-300 cursor-pointer shadow-3xs flex items-center gap-1 transition-colors"
+                      >
+                        Copy Domain Host
+                      </button>
+                      <a
+                        href="https://console.firebase.google.com/project/gen-lang-client-0670451952/authentication/settings"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[9.5px] font-bold cursor-pointer shadow-2xs inline-flex items-center gap-1 transition-colors"
+                      >
+                        Go to Firebase Auth Settings
+                      </a>
+                    </div>
+
+                    <div className="text-[9.5px] leading-relaxed text-slate-500 dark:text-slate-400 space-y-1.5 pt-1 border-t border-rose-100/50 dark:border-rose-900/20">
+                      <div className="flex gap-1.5"><span className="text-blue-500 font-bold">1.</span> <span>Copy the host using the <b>Copy Domain Host</b> button.</span></div>
+                      <div className="flex gap-1.5"><span className="text-blue-500 font-bold">2.</span> <span>Click <b>Go to Firebase Auth Settings</b> (sign in to your console).</span></div>
+                      <div className="flex gap-1.5"><span className="text-blue-500 font-bold">3.</span> <span>Scroll to <b>Authorized domains</b>, click <b>Add domain</b>, paste and click Save.</span></div>
+                      <div className="flex gap-1.5"><span className="text-blue-500 font-bold">4.</span> <span>Refresh this tab and retry. Or, click below to try offline local storage.</span></div>
+                    </div>
+                  </div>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => setAuthError(null)}
+                  className="w-full text-center text-[10px] text-slate-400 hover:text-slate-600 dark:text-slate-550 dark:hover:text-slate-405 font-bold border-t border-slate-105 dark:border-slate-800/60 pt-2 block cursor-pointer transition-colors"
+                >
+                  Clear Info & Retry Sign-In
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="text-[10px] text-slate-400 dark:text-slate-505 text-center uppercase tracking-wider font-mono">
