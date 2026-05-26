@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, TicketSource } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy } from 'lucide-react';
 
 interface TicketDrawerProps {
   isOpen: boolean;
@@ -24,12 +24,14 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
   const [activeNotesTab, setActiveNotesTab] = useState<'edit' | 'preview'>('edit');
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
 
   useEffect(() => {
     setShowDeleteConfirm(false);
     setActiveNotesTab('edit');
     setShowMarkdownHelp(false);
     setCopied(false);
+    setCopiedId(false);
     if (ticket) {
       setTitle(ticket.title);
       setType(ticket.type);
@@ -146,8 +148,31 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
             {/* Header */}
             <div className="p-5 border-b border-slate-150 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950 sticky top-0 z-10">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">
-                  {ticket ? `${ticket.id} • ${source} Source` : 'New Queue Ticket'}
+                <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase flex items-center gap-1.5 select-none">
+                  {ticket ? (
+                    <>
+                      <span>{ticket.id}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(ticket.id);
+                          setCopiedId(true);
+                          setTimeout(() => setCopiedId(false), 1500);
+                        }}
+                        className="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-blue-600 transition-colors"
+                        title="Copy Ticket ID to Clipboard"
+                      >
+                        {copiedId ? (
+                          <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </button>
+                      <span>• {source} Source</span>
+                    </>
+                  ) : (
+                    'New Queue Ticket'
+                  )}
                 </span>
                 <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1 font-display">
                   {ticket ? 'Edit Ticket Details' : 'Create Operational Ticket'}

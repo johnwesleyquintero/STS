@@ -17,7 +17,9 @@ import {
   Square,
   X,
   ArrowUpDown,
-  CircleAlert
+  CircleAlert,
+  Copy,
+  Download
 } from 'lucide-react';
 
 interface TicketListProps {
@@ -66,6 +68,39 @@ export default function TicketList({
   // Multi-selection states
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkTagInput, setBulkTagInput] = useState('');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleExportToCSV = () => {
+    const ticketsToExport = sortedTickets;
+    if (ticketsToExport.length === 0) return;
+
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'CreatedAt', 'UpdatedAt'];
+    const csvContent = [
+      headers.join(','),
+      ...ticketsToExport.map(t => [
+        t.id,
+        t.title,
+        t.type,
+        t.priority,
+        t.status,
+        t.notes || '',
+        t.tags.join('; '),
+        t.source,
+        t.createdAt,
+        t.updatedAt,
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `tickets_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Styles maps
   const priorityStyles: Record<TicketPriority, { text: string, bg: string, border: string }> = {
@@ -299,6 +334,17 @@ export default function TicketList({
                 <option value="titleAsc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Title (A-Z)</option>
               </select>
             </div>
+
+            {/* Export CSV Button */}
+            <button
+              id="export-to-csv-btn"
+              onClick={handleExportToCSV}
+              className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shadow-3xs"
+              title="Export visible/filtered tickets to CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-400" />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 
@@ -459,10 +505,32 @@ export default function TicketList({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2 cursor-pointer" onClick={() => onSelectTicket(ticket)}>
-                          {/* Ticket Key ID */}
-                          <span className="font-mono text-xs font-bold text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {ticket.id}
-                          </span>
+                          {/* Ticket Key ID & Copy Button */}
+                          <div className="flex items-center gap-1 group/id" onClick={(e) => e.stopPropagation()}>
+                            <span 
+                              className="font-mono text-xs font-bold text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                              onClick={() => onSelectTicket(ticket)}
+                              title="Click to view ticket details"
+                            >
+                              {ticket.id}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(ticket.id);
+                                setCopiedId(ticket.id);
+                                setTimeout(() => setCopiedId(null), 1500);
+                              }}
+                              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-850 rounded text-slate-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 opacity-60 hover:opacity-100 transition-all cursor-pointer"
+                              title="Copy Ticket ID to Clipboard"
+                            >
+                              {copiedId === ticket.id ? (
+                                <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-450" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
 
                           {/* Type Category Tag */}
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${typeStyles[ticket.type]}`}>

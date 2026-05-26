@@ -12,7 +12,10 @@ import {
   Search,
   Filter,
   ArrowRightLeft,
-  X
+  X,
+  Copy,
+  Download,
+  Check
 } from 'lucide-react';
 
 interface KanbanBoardProps {
@@ -52,6 +55,39 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
   // Active Drag and Drop visual column states
   const [activeOverCol, setActiveOverCol] = useState<TicketStatus | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleExportToCSV = () => {
+    const ticketsToExport = filteredTickets;
+    if (ticketsToExport.length === 0) return;
+
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'CreatedAt', 'UpdatedAt'];
+    const csvContent = [
+      headers.join(','),
+      ...ticketsToExport.map(t => [
+        t.id,
+        t.title,
+        t.type,
+        t.priority,
+        t.status,
+        t.notes || '',
+        t.tags.join('; '),
+        t.source,
+        t.createdAt,
+        t.updatedAt,
+      ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `tickets_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const columns: { status: TicketStatus; label: string; icon: any; color: string; border: string; bg: string }[] = [
     {
@@ -233,6 +269,17 @@ export default function KanbanBoard({
                 <option value="System" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">System</option>
               </select>
             </div>
+
+            {/* Export CSV Button */}
+            <button
+              id="kanban-export-csv-btn"
+              onClick={handleExportToCSV}
+              className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer shadow-3xs"
+              title="Export visible Kanban tickets to CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-400" />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 
@@ -337,13 +384,32 @@ export default function KanbanBoard({
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 overflow-hidden">
-                            {/* ID */}
-                            <span
-                              onClick={() => onSelectTicket(ticket)}
-                              className="font-mono text-[10px] font-bold text-slate-400 group-hover:text-blue-600 cursor-pointer transition-colors"
-                            >
-                              {ticket.id}
-                            </span>
+                            {/* ID & Copy Button */}
+                            <div className="flex items-center gap-1 group/kbid" onClick={(e) => e.stopPropagation()}>
+                              <span
+                                onClick={() => onSelectTicket(ticket)}
+                                className="font-mono text-[10px] font-bold text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                                title="Click to view ticket details"
+                              >
+                                {ticket.id}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(ticket.id);
+                                  setCopiedId(ticket.id);
+                                  setTimeout(() => setCopiedId(null), 1500);
+                                }}
+                                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-blue-650 dark:text-slate-500 dark:hover:text-blue-450 opacity-60 hover:opacity-100 transition-all cursor-pointer"
+                                title="Copy Ticket ID to Clipboard"
+                              >
+                                {copiedId === ticket.id ? (
+                                  <Check className="w-2.5 h-2.5 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-2.5 h-2.5" />
+                                )}
+                              </button>
+                            </div>
 
                             {/* Type */}
                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide border border-transparent ${typeStyles[ticket.type]}`}>
