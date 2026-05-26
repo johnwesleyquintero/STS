@@ -870,7 +870,7 @@ export default function App() {
                 </span>
               )}
             </div>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Visual Queue & Jira-Inspired Execution Workspace</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Queue & Operations Workspace</p>
           </div>
         </div>
 
@@ -916,24 +916,18 @@ export default function App() {
         )}
 
         {/* Sync, Logs, and User Profile menu */}
-        <div className="flex items-center justify-end gap-2.5">
+        <div className="flex items-center justify-end gap-2">
           {/* Theme toggler button */}
           <button
             id="header-theme-toggle-btn"
             onClick={() => setIsDarkMode(!isDarkMode)}
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none"
+            className="p-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer shadow-3xs hover:shadow-2xs select-none h-9 w-9"
           >
             {isDarkMode ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span>Light Mode</span>
-              </>
+              <Sun className="w-4 h-4 text-amber-500" />
             ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-blue-500" />
-                <span>Dark Mode</span>
-              </>
+              <Moon className="w-4 h-4 text-blue-500" />
             )}
           </button>
 
@@ -941,39 +935,39 @@ export default function App() {
           <button
             id="header-manual-sync-btn"
             onClick={handleManualSyncPress}
-            title="Refresh database state"
+            title="Refresh database state (Sync)"
             disabled={isSyncing}
-            className="px-3 py-1.5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none disabled:opacity-50"
+            className="p-2 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-3xs hover:shadow-2xs select-none disabled:opacity-50 h-9 w-9"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-500' : ''}`} />
-            <span>Sync</span>
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-blue-500' : ''}`} />
           </button>
 
           {/* Activity Logs history drawer button */}
           <button
             id="header-activity-logs-btn"
             onClick={() => setShowLogsPanel(true)}
-            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none"
+            title="View activity history logs"
+            className="p-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center cursor-pointer shadow-3xs hover:shadow-2xs select-none h-9 w-9"
           >
-            <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span>Activity Log</span>
+            <History className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </button>
 
           {sessionMode === 'online' && user && (
-            <div className="flex items-center gap-2 border-l border-slate-250 dark:border-slate-800 pl-3">
+            <div className="flex items-center gap-2 border-l border-slate-250 dark:border-slate-800 pl-2.5">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName || 'Avatar'}
                   referrerPolicy="no-referrer"
                   className="w-7 h-7 rounded-full border border-slate-200"
+                  title={`${user.displayName || 'Operator'} (${user.email})`}
                 />
               ) : (
-                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 grid place-items-center">
+                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 grid place-items-center" title={`${user.displayName || 'Operator'} (${user.email})`}>
                   <UserIcon className="w-4 h-4 text-slate-400" />
                 </div>
               )}
-              <div className="hidden lg:block text-left">
+              <div className="hidden lg:block text-left mr-0.5">
                 <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate leading-tight">
                   {user.displayName || 'Operator'}
                 </p>
@@ -986,10 +980,9 @@ export default function App() {
                 id="header-logout-btn"
                 onClick={handleLogout}
                 title="Disconnect Account"
-                className="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/20 text-slate-650 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-3xs hover:shadow-2xs select-none"
+                className="p-2 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/20 text-slate-650 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer flex items-center justify-center shadow-3xs hover:shadow-2xs select-none h-9 w-9"
               >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Disconnect</span>
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -998,10 +991,10 @@ export default function App() {
             <button
               id="header-offline-exit-btn"
               onClick={handleLogout}
-              className="px-3 py-1.5 text-slate-650 hover:text-rose-650 dark:text-slate-300 dark:hover:text-rose-450 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer flex items-center gap-2 text-xs font-semibold hover:bg-rose-50/50 dark:hover:bg-rose-950/10 transition-all shadow-3xs hover:shadow-2xs select-none"
+              title="Exit Isolated Mode"
+              className="p-2 text-slate-650 hover:text-rose-650 dark:text-slate-300 dark:hover:text-rose-450 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer flex items-center justify-center hover:bg-rose-50/50 dark:hover:bg-rose-950/10 transition-all shadow-3xs hover:shadow-2xs select-none h-9 w-9"
             >
-              <LogOut className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span>Exit Isolated Mode</span>
+              <LogOut className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             </button>
           )}
         </div>
