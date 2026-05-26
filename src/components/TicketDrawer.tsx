@@ -29,7 +29,7 @@ export default function TicketDrawer({
   const [tags, setTags] = useState<string[]>([]);
   const [source, setSource] = useState<TicketSource>('Manual');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [activeNotesTab, setActiveNotesTab] = useState<'edit' | 'preview'>('edit');
+  const [activeNotesTab, setActiveNotesTab] = useState<'edit' | 'preview'>('preview');
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -37,7 +37,7 @@ export default function TicketDrawer({
 
   useEffect(() => {
     setShowDeleteConfirm(false);
-    setActiveNotesTab('edit');
+    setActiveNotesTab(ticket ? 'preview' : 'edit');
     setShowMarkdownHelp(false);
     setCopied(false);
     setCopiedId(false);
