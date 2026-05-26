@@ -69,26 +69,26 @@ export default function TicketList({
 
   // Styles maps
   const priorityStyles: Record<TicketPriority, { text: string, bg: string, border: string }> = {
-    P0: { text: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', border: 'border-rose-100/80 dark:border-rose-905/40' },
-    P1: { text: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50/70 dark:bg-blue-950/30', border: 'border-blue-100/80 dark:border-blue-905/40' },
-    P2: { text: 'text-amber-755 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-100/85 dark:border-amber-905/40' },
+    P0: { text: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', border: 'border-rose-100/80 dark:border-rose-900/40' },
+    P1: { text: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50/70 dark:bg-blue-950/30', border: 'border-blue-100/80 dark:border-blue-900/40' },
+    P2: { text: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-100/85 dark:border-amber-900/40' },
     P3: { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-900', border: 'border-slate-200 dark:border-slate-800' },
   };
 
   const statusConfig: Record<TicketStatus, { icon: any, color: string }> = {
     'Open': { icon: HelpCircle, color: 'text-purple-600 border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-300 dark:border-purple-900' },
-    'In Progress': { icon: PlayCircle, color: 'text-blue-600 border-blue-150 bg-blue-50/60 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900' },
+    'In Progress': { icon: PlayCircle, color: 'text-blue-600 border-blue-200 bg-blue-50/60 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900' },
     'Blocked': { icon: AlertCircle, color: 'text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/60' },
-    'Done': { icon: CheckCircle2, color: 'text-emerald-600 border-emerald-150 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-305 dark:border-emerald-900' },
+    'Done': { icon: CheckCircle2, color: 'text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-900' },
   };
 
   const typeStyles: Record<TicketType, string> = {
-    Task: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-350 border-slate-205 dark:border-slate-800',
-    Ops: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-150 dark:border-indigo-900/60',
-    Bug: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-150 dark:border-rose-900/60',
-    Lead: 'bg-teal-50 text-teal-750 dark:bg-teal-950/30 dark:text-teal-300 border-teal-150 dark:border-teal-900/60',
-    Catalog: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300 border-fuchsia-150 dark:border-fuchsia-900/60',
-    System: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 border-amber-150 dark:border-amber-900/60',
+    Task: 'bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-350 border-slate-200 dark:border-slate-800',
+    Ops: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/60',
+    Bug: 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-900/60',
+    Lead: 'bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-300 border-teal-200 dark:border-teal-900/60',
+    Catalog: 'bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-300 border-fuchsia-200 dark:border-fuchsia-900/60',
+    System: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300 border-amber-200 dark:border-amber-900/60',
   };
 
   // Perform filtering
@@ -345,7 +345,7 @@ export default function TicketList({
                 className="text-[10px] font-bold text-blue-600 hover:text-blue-700 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded-md flex items-center gap-1 ml-auto cursor-pointer flex-shrink-0 border border-blue-100 dark:border-blue-900/60"
               >
                 <X className="w-2.5 h-2.5" />
-                Clear Reset
+                Clear Tag Filter
               </button>
             )}
           </div>
@@ -546,7 +546,7 @@ export default function TicketList({
                         <button
                           id={`row-details-btn-${ticket.id}`}
                           onClick={() => onSelectTicket(ticket)}
-                          className="p-1.5 text-slate-404 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 grid place-items-center transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 grid place-items-center transition-colors cursor-pointer"
                           title="Open Ticket Editor"
                         >
                           <ChevronRight className="w-4 h-4" />

@@ -732,7 +732,7 @@ export default function App() {
             <button
               id="offline-isolated-btn"
               onClick={handleEnterIsolatedMode}
-              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-xs font-bold text-slate-650 dark:text-slate-305 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-650 dark:text-slate-300 rounded-xl transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
               <WifiOff className="w-3.5 h-3.5 text-slate-500" />
               Isolated Preview Mode (Offline)
@@ -740,7 +740,7 @@ export default function App() {
 
             {/* Premium, Interactive Firebase Auth Diagnostic Help Card */}
             {authError && (
-              <div className="mt-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-150 dark:border-rose-900/40 text-left space-y-3" id="auth-error-panel">
+              <div className="mt-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-left space-y-3" id="auth-error-panel">
                 <div className="flex gap-2">
                   <div className="flex-shrink-0 w-5 h-5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold text-xs">
                     !
@@ -825,7 +825,7 @@ export default function App() {
           <div
             key={toast.id}
             id={`toast-${toast.id}`}
-            className={`p-3.5 rounded-xl text-xs font-bold border shadow-lg flex items-center justify-between cursor-pointer pointer-events-auto bg-white dark:bg-zinc-900 border-zinc-155 dark:border-zinc-800`}
+            className={`p-3.5 rounded-xl text-xs font-bold border shadow-lg flex items-center justify-between cursor-pointer pointer-events-auto bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800`}
             role="alert"
           >
             <div className="flex items-center gap-2">

@@ -91,8 +91,8 @@ export default function KanbanBoard({
   // Styles maps
   const priorityStyles: Record<TicketPriority, { text: string }> = {
     P0: { text: 'text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-950/40' },
-    P1: { text: 'text-blue-700 bg-blue-50 dark:text-blue-350 dark:bg-blue-950/30' },
-    P2: { text: 'text-amber-755 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30' },
+    P1: { text: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-950/30' },
+    P2: { text: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30' },
     P3: { text: 'text-slate-650 bg-slate-105 dark:text-slate-400 dark:bg-slate-900' },
   };
 
@@ -102,7 +102,7 @@ export default function KanbanBoard({
     Bug: 'text-rose-700 bg-rose-50 dark:text-rose-300 dark:bg-rose-950/40',
     Lead: 'text-teal-700 bg-teal-50 dark:text-teal-300 dark:bg-teal-950/30',
     Catalog: 'text-fuchsia-700 bg-fuchsia-50 dark:text-fuchsia-300 dark:bg-fuchsia-950/30',
-    System: 'text-amber-705 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30',
+    System: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-950/30',
   };
 
   // Perform filtering
@@ -301,7 +301,7 @@ export default function KanbanBoard({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Icon className={`w-4 h-4 ${col.color}`} />
-                  <h3 className="text-sm font-bold text-slate-750 dark:text-slate-100 tracking-tight font-display">{col.label}</h3>
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-100 tracking-tight font-display">{col.label}</h3>
                 </div>
                 <span className="text-xs font-mono font-bold text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 px-2.5 py-0.5 rounded-full shadow-2xs">
                   {colTickets.length}

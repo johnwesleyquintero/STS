@@ -161,7 +161,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                     onClick={handleCopyLink}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
                       copied 
-                        ? 'bg-emerald-50 border-emerald-250 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900 dark:text-emerald-400' 
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900 dark:text-emerald-400' 
                         : 'bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 shadow-3xs hover:shadow-2xs'
                     }`}
                     title="Copy shareable link to this ticket"
@@ -470,7 +470,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                     {tags.map((tag, index) => (
                       <span
                         key={`${tag}-${index}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-150 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900"
                       >
                         {tag}
                         <button
@@ -599,7 +599,7 @@ function parseMarkdown(text: string) {
         if (content.startsWith('- ') || content.startsWith('* ')) {
           return (
             <ul key={idx} className="list-disc pl-5 space-y-0.5">
-              <li className="text-slate-700 dark:text-slate-305" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />
+              <li className="text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />
             </ul>
           );
         }
