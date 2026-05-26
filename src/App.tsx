@@ -141,6 +141,14 @@ export default function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showLogsPanel, setShowLogsPanel] = useState(false);
 
+  // Lifted filtering, search, and sorting states for global synchronization
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [priorityFilter, setPriorityFilter] = useState<string>('All');
+  const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [sortPreference, setSortPreference] = useState<string>('priority');
+
   // Toast system
   const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
 
@@ -207,6 +215,26 @@ export default function App() {
       detectAndLoadGSheetsDatabase();
     }
   }, [sessionMode, accessToken]);
+
+  // Deep linking: Detect ticket ID in query params (e.g. ?ticketId=STS-xxxx) and open detail drawer automatically
+  useEffect(() => {
+    if (tickets.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const ticketIdFromUrl = params.get('ticketId') || params.get('id');
+      if (ticketIdFromUrl) {
+        const matchingTicket = tickets.find(
+          (t) => t.id.toLowerCase() === ticketIdFromUrl.toLowerCase()
+        );
+        if (matchingTicket) {
+          setSelectedTicket(matchingTicket);
+          setIsDrawerOpen(true);
+          // Gently clean up browser query parameters to avoid re-triggering on manual refresh
+          const newUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
+    }
+  }, [tickets]);
 
   // Load offline tickets/logs from LocalStorage
   const loadOfflineData = () => {
@@ -894,16 +922,16 @@ export default function App() {
             id="header-theme-toggle-btn"
             onClick={() => setIsDarkMode(!isDarkMode)}
             title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="p-1 px-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs font-bold"
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none"
           >
             {isDarkMode ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-amber-550" />
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
                 <span>Light Mode</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-indigo-505" />
+                <Moon className="w-3.5 h-3.5 text-blue-500" />
                 <span>Dark Mode</span>
               </>
             )}
@@ -915,24 +943,24 @@ export default function App() {
             onClick={handleManualSyncPress}
             title="Refresh database state"
             disabled={isSyncing}
-            className="p-1 px-2 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs font-bold"
+            className="px-3 py-1.5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs flex items-center gap-2 transition-all cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-505' : ''}`} />
-            Sync
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-blue-500' : ''}`} />
+            <span>Sync</span>
           </button>
 
           {/* Activity Logs history drawer button */}
           <button
             id="header-activity-logs-btn"
             onClick={() => setShowLogsPanel(true)}
-            className="p-1 px-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 flex items-center gap-1.5 cursor-pointer shadow-xs font-bold"
+            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer shadow-3xs hover:shadow-2xs font-semibold select-none"
           >
-            <History className="w-3.5 h-3.5" />
-            Activity Log
+            <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <span>Activity Log</span>
           </button>
 
           {sessionMode === 'online' && user && (
-            <div className="flex items-center gap-2 border-l border-slate-200 dark:border-slate-800 pl-3">
+            <div className="flex items-center gap-2 border-l border-slate-250 dark:border-slate-800 pl-3">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
@@ -949,7 +977,7 @@ export default function App() {
                 <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200 max-w-[100px] truncate leading-tight">
                   {user.displayName || 'Operator'}
                 </p>
-                <p className="text-[8px] text-slate-450 dark:text-slate-400 truncate leading-none max-w-[100px]">
+                <p className="text-[8px] text-slate-500 dark:text-slate-400 truncate leading-none max-w-[100px]">
                   {user.email}
                 </p>
               </div>
@@ -958,9 +986,10 @@ export default function App() {
                 id="header-logout-btn"
                 onClick={handleLogout}
                 title="Disconnect Account"
-                className="p-1.5 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/20 text-slate-500 hover:text-rose-600 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-100"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-950/20 text-slate-650 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shadow-3xs hover:shadow-2xs select-none"
               >
                 <LogOut className="w-3.5 h-3.5" />
+                <span>Disconnect</span>
               </button>
             </div>
           )}
@@ -969,10 +998,10 @@ export default function App() {
             <button
               id="header-offline-exit-btn"
               onClick={handleLogout}
-              className="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg border border-slate-200 hover:bg-rose-50/50 cursor-pointer flex items-center gap-1 text-[11px] font-bold transition-all bg-white"
+              className="px-3 py-1.5 text-slate-650 hover:text-rose-650 dark:text-slate-300 dark:hover:text-rose-450 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer flex items-center gap-2 text-xs font-semibold hover:bg-rose-50/50 dark:hover:bg-rose-950/10 transition-all shadow-3xs hover:shadow-2xs select-none"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              Exit Isolated Mode
+              <LogOut className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Exit Isolated Mode</span>
             </button>
           )}
         </div>
@@ -1046,7 +1075,16 @@ export default function App() {
         )}
 
         {/* Stats Summary Counter line */}
-        <StatsGrid tickets={tickets} />
+        <StatsGrid
+          tickets={tickets}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
+          setTypeFilter={setTypeFilter}
+          setSelectedTag={setSelectedTag}
+          setSearchTerm={setSearchTerm}
+        />
 
         {/* Quick Ticket Input Form */}
         <QuickAdd onAddTicket={handleQuickAddTicket} />
@@ -1100,12 +1138,34 @@ export default function App() {
               onUpdateStatus={handleUpdateTicketStatus}
               onBulkUpdate={handleBulkUpdateTickets}
               onBulkDelete={handleBulkDeleteTickets}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              priorityFilter={priorityFilter}
+              setPriorityFilter={setPriorityFilter}
+              typeFilter={typeFilter}
+              setTypeFilter={setTypeFilter}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
+              sortPreference={sortPreference}
+              setSortPreference={setSortPreference}
             />
           ) : (
             <KanbanBoard
               tickets={tickets}
               onSelectTicket={handleOpenEditTicketDrawer}
               onUpdateStatus={handleUpdateTicketStatus}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              priorityFilter={priorityFilter}
+              setPriorityFilter={setPriorityFilter}
+              typeFilter={typeFilter}
+              setTypeFilter={setTypeFilter}
+              selectedTag={selectedTag}
+              setSelectedTag={setSelectedTag}
             />
           )}
         </div>

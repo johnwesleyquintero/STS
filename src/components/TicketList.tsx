@@ -26,6 +26,20 @@ interface TicketListProps {
   onUpdateStatus: (id: string, status: TicketStatus) => void;
   onBulkUpdate: (ids: string[], updates: Partial<Ticket>) => void;
   onBulkDelete: (ids: string[]) => void;
+
+  // Lifted state filters
+  searchTerm: string;
+  setSearchTerm: (val: string) => void;
+  statusFilter: string;
+  setStatusFilter: (val: string) => void;
+  priorityFilter: string;
+  setPriorityFilter: (val: string) => void;
+  typeFilter: string;
+  setTypeFilter: (val: string) => void;
+  selectedTag: string | null;
+  setSelectedTag: (val: string | null) => void;
+  sortPreference: string;
+  setSortPreference: (val: string) => void;
 }
 
 export default function TicketList({
@@ -33,16 +47,22 @@ export default function TicketList({
   onSelectTicket,
   onUpdateStatus,
   onBulkUpdate,
-  onBulkDelete
-}: TicketListProps) {
-  // Input & Filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('All');
-  const [priorityFilter, setPriorityFilter] = useState<string>('All');
-  const [typeFilter, setTypeFilter] = useState<string>('All');
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [sortPreference, setSortPreference] = useState<string>('priority');
+  onBulkDelete,
 
+  // De-duplicate local filters onto globally unified ones
+  searchTerm,
+  setSearchTerm,
+  statusFilter,
+  setStatusFilter,
+  priorityFilter,
+  setPriorityFilter,
+  typeFilter,
+  setTypeFilter,
+  selectedTag,
+  setSelectedTag,
+  sortPreference,
+  setSortPreference,
+}: TicketListProps) {
   // Multi-selection states
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkTagInput, setBulkTagInput] = useState('');
@@ -190,11 +210,21 @@ export default function TicketList({
             <input
               id="ticket-search-input"
               type="text"
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+              className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
               placeholder="Search by ID, title, tags, notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 cursor-pointer transition-colors"
+                title="Clear search query"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Filters Bar */}
@@ -354,6 +384,18 @@ export default function TicketList({
             <CircleAlert className="w-10 h-10 mx-auto text-slate-350 dark:text-slate-600 mb-3" />
             <p className="text-slate-400 text-sm font-bold">No operational tickets align with your parameters.</p>
             <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">Try adjusting filters, clearing chosen tags, or capture a rapid ticket above.</p>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('All');
+                setPriorityFilter('All');
+                setTypeFilter('All');
+                setSelectedTag(null);
+              }}
+              className="mt-4 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:hover:bg-blue-950/50 dark:text-blue-300 text-xs font-bold rounded-lg border border-blue-105 dark:border-blue-900 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            >
+              Reset All Active Filters
+            </button>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-850/80 bg-white dark:bg-slate-900" id="queue-body-rows">

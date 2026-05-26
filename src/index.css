@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;505;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
@@ -7,14 +7,41 @@
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Notion-Inspired slate remapping */
+  --color-slate-50: #F7F7F5;
+  --color-slate-100: #EFEFED;
+  --color-slate-150: #E8E8E6;
+  --color-slate-200: #E1E1DE;
+  --color-slate-250: #D8D8D5;
+  --color-slate-300: #C1C1BE;
+  --color-slate-400: #9C9C99;
+  --color-slate-500: #787774;
+  --color-slate-550: #5F5E5B;
+  --color-slate-600: #4B4A47;
+  --color-slate-650: #3E3D3A;
+  --color-slate-700: #37352F; /* Key Notion Light Charcoal Text */
+  --color-slate-800: #2E2E2E;
+  --color-slate-850: #252525;
+  --color-slate-900: #202020;  /* Key Notion Dark Card Base */
+  --color-slate-950: #191919;  /* Key Notion Dark Main Base */
+
+  --color-indigo-500: #37352F; /* Map Indigo focus highlights to soft charcoal */
+  --color-slate-105: #E8E8E6;
+  --color-slate-155: #E1E1DE;
+  --color-slate-350: #C1C1BE;
+  --color-slate-505: #9C9C99;
+  --color-slate-605: #5F5E5B;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #F8FAFC;
+  background-color: var(--color-slate-50);
+  color: var(--color-slate-700);
 }
 
 .dark body {
-  background-color: #0a0f1d;
+  background-color: var(--color-slate-950);
+  color: var(--color-slate-100);
 }
 

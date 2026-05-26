@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, TicketSource } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check } from 'lucide-react';
 
 interface TicketDrawerProps {
   isOpen: boolean;
@@ -21,9 +21,15 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
   const [tags, setTags] = useState<string[]>([]);
   const [source, setSource] = useState<TicketSource>('Manual');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeNotesTab, setActiveNotesTab] = useState<'edit' | 'preview'>('edit');
+  const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setShowDeleteConfirm(false);
+    setActiveNotesTab('edit');
+    setShowMarkdownHelp(false);
+    setCopied(false);
     if (ticket) {
       setTitle(ticket.title);
       setType(ticket.type);
@@ -45,6 +51,15 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
       setSource('Manual');
     }
   }, [ticket, isOpen]);
+
+  const handleCopyLink = () => {
+    if (!ticket) return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?ticketId=${ticket.id}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const handleAddTag = () => {
     const freshTag = tagsInput.trim();
@@ -139,6 +154,31 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                 </h2>
               </div>
               <div className="flex items-center gap-2">
+                {ticket && (
+                  <button
+                    id="drawer-copy-link-btn"
+                    type="button"
+                    onClick={handleCopyLink}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 border rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                      copied 
+                        ? 'bg-emerald-50 border-emerald-250 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900 dark:text-emerald-400' 
+                        : 'bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 shadow-3xs hover:shadow-2xs'
+                    }`}
+                    title="Copy shareable link to this ticket"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Link className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>Copy Link</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 {ticket && (
                   <button
                     id="drawer-delete-btn"
@@ -282,20 +322,121 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
               </div>
 
               {/* Notebooks/Markdown Notes section */}
-              <div className="space-y-1.5 flex-1 flex flex-col">
+              <div className="space-y-1.5 flex-1 flex flex-col relative">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-550 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5" htmlFor="ticket-notes-textarea">
-                    <FileText className="w-3.5 h-3.5 text-slate-400" />
-                    Details & Notes (Markdown)
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs font-bold text-slate-550 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5" htmlFor="ticket-notes-textarea">
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      Details & Notes (Markdown)
+                    </label>
+                    <button
+                      id="markdown-notes-help-toggle"
+                      type="button"
+                      onClick={() => setShowMarkdownHelp(!showMarkdownHelp)}
+                      className={`p-0.5 rounded-full transition-all text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-850 cursor-pointer ${
+                        showMarkdownHelp ? '!text-blue-500 !bg-blue-50 dark:!bg-blue-950/40' : ''
+                      }`}
+                      title="Markdown styling guide"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex border border-slate-200 dark:border-slate-800/80 rounded-lg p-0.5 bg-slate-50 dark:bg-slate-950 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveNotesTab('edit')}
+                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-md transition-colors cursor-pointer ${
+                        activeNotesTab === 'edit'
+                          ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-3xs border border-slate-200/50 dark:border-slate-800/40 font-bold'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveNotesTab('preview')}
+                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-md transition-colors cursor-pointer ${
+                        activeNotesTab === 'preview'
+                          ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-3xs border border-slate-200/50 dark:border-slate-800/40 font-bold'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      Preview
+                    </button>
+                  </div>
                 </div>
-                <textarea
-                  id="ticket-notes-textarea"
-                  className="flex-1 min-h-[140px] w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-sm text-slate-900 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 font-mono text-xs leading-relaxed"
-                  placeholder="Insert links, action items, descriptions, or observations here..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
+
+                <AnimatePresence>
+                  {showMarkdownHelp && (
+                    <motion.div
+                      id="markdown-cheat-sheet-popover"
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-8 z-30 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg p-3.5 select-none"
+                    >
+                      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <HelpCircle className="w-3 h-3 text-blue-500" />
+                          Markdown Format Guide
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowMarkdownHelp(false)}
+                          className="p-1 rounded-md text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] text-slate-600 dark:text-slate-400 font-sans">
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-400 dark:text-slate-500">SYNTAX</p>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400"># Header</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">**bold**</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">*italic*</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">`code`</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">- [ ] task</code>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-bold text-slate-400 dark:text-slate-500">PREVIEW</p>
+                          <span className="block font-bold text-slate-800 dark:text-slate-200 mt-1 pb-0.5">Title Header</span>
+                          <strong className="block font-bold text-slate-800 dark:text-slate-200">bold text</strong>
+                          <em className="block italic">italic text</em>
+                          <code className="block bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded text-[9px] w-fit font-mono font-bold text-blue-600 dark:text-blue-400">code</code>
+                          <span className="block text-slate-500 dark:text-slate-400/90 font-medium">☐ task box</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] text-slate-600 dark:text-slate-400 font-sans mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/65">
+                        <div className="space-y-1">
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">&gt; quote</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">- list item</code>
+                          <code className="block bg-slate-50 dark:bg-slate-950 p-1 rounded border border-slate-100 dark:border-slate-800/60 text-blue-600 dark:text-blue-400">[Label](url)</code>
+                        </div>
+                        <div className="space-y-1 justify-center flex flex-col">
+                          <span className="block border-l-2 border-slate-300 dark:border-slate-600 pl-1.5 italic text-slate-500">quote block</span>
+                          <span className="block pl-1 text-slate-600 dark:text-slate-300">• list item</span>
+                          <span className="block text-blue-500 dark:text-blue-400 underline">Label</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {activeNotesTab === 'edit' ? (
+                  <textarea
+                    id="ticket-notes-textarea"
+                    className="flex-1 min-h-[140px] w-full p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-sm text-slate-900 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 font-mono text-xs leading-relaxed"
+                    placeholder="Insert links, action items, descriptions, or observations here..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                ) : (
+                  <div className="flex-1 min-h-[140px] max-h-[280px] w-full p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 rounded-lg overflow-y-auto" id="markdown-preview-container">
+                    {parseMarkdown(notes)}
+                  </div>
+                )}
               </div>
 
               {/* Tags Section */}
@@ -383,5 +524,103 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+function renderInlineMarkdown(text: string): string {
+  let html = text;
+  
+  // Code pieces: `code`
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-slate-100 dark:bg-slate-950 px-1 py-0.5 rounded font-mono text-[11px] text-blue-600 dark:text-blue-400 font-bold">$1</code>');
+  
+  // Bold: **text**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-slate-900 dark:text-slate-100">$1</strong>');
+  
+  // Italic: *text*
+  html = html.replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
+  
+  // Links: [label](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 font-semibold">$1</a>');
+  
+  return html;
+}
+
+function parseMarkdown(text: string) {
+  if (!text || !text.trim()) {
+    return <p className="text-slate-400 dark:text-slate-500 italic text-xs">No description or notes provided. Write some Markdown above!</p>;
+  }
+  
+  // Safe simple escape to prevent script injection but let us draw custom tags
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+    
+  const lines = escaped.split('\n');
+  return (
+    <div className="space-y-2 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-sans">
+      {lines.map((line, idx) => {
+        let content = line;
+        
+        // Checklist items: - [ ] or - [x]
+        const isCheckedList = content.startsWith('- [x]') || content.startsWith('- [X]');
+        const isUncheckedList = content.startsWith('- [ ]');
+        if (isCheckedList) {
+          const rawText = content.substring(5).trim();
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 select-none">
+              <input type="checkbox" checked readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
+              <span className="line-through text-slate-400 dark:text-slate-500" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
+            </div>
+          );
+        }
+        if (isUncheckedList) {
+          const rawText = content.substring(5).trim();
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 select-none">
+              <input type="checkbox" checked={false} readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
+              <span className="text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
+            </div>
+          );
+        }
+
+        // Headers
+        if (content.startsWith('### ')) {
+          return <h5 key={idx} className="text-xs font-bold text-slate-900 dark:text-white mt-3 mb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(4)) }} />;
+        }
+        if (content.startsWith('## ')) {
+          return <h4 key={idx} className="text-sm font-bold text-slate-900 dark:text-white mt-4 mb-1.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(3)) }} />;
+        }
+        if (content.startsWith('# ')) {
+          return <h3 key={idx} className="text-base font-bold text-slate-900 dark:text-white mt-5 mb-2 border-b border-slate-200 dark:border-slate-800 pb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />;
+        }
+        
+        // Bullet list
+        if (content.startsWith('- ') || content.startsWith('* ')) {
+          return (
+            <ul key={idx} className="list-disc pl-5 space-y-0.5">
+              <li className="text-slate-700 dark:text-slate-305" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />
+            </ul>
+          );
+        }
+
+        // Blockquote
+        if (content.startsWith('&gt; ') || content.startsWith('> ')) {
+          const rawText = content.startsWith('&gt; ') ? content.substring(5) : content.substring(2);
+          return (
+            <blockquote key={idx} className="border-l-2 border-slate-400 dark:border-slate-600 pl-3 italic text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-950/40 p-1.5 rounded-r">
+              <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
+            </blockquote>
+          );
+        }
+        
+        // Plain paragraphs or empty lines
+        if (content.trim() === '') {
+          return <div key={idx} className="h-1.5" />;
+        }
+        
+        return <p key={idx} className="text-slate-700 dark:text-slate-300 animate-fade-in" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content) }} />;
+      })}
+    </div>
   );
 }
