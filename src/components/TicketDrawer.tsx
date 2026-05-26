@@ -65,6 +65,21 @@ export default function TicketDrawer({
     }
   }, [ticket, isOpen]);
 
+  const handleToggleCheckbox = (lineIdx: number) => {
+    const splitLines = notes.split('\n');
+    if (lineIdx >= 0 && lineIdx < splitLines.length) {
+      const line = splitLines[lineIdx];
+      if (line.includes('- [ ]')) {
+        splitLines[lineIdx] = line.replace('- [ ]', '- [x]');
+      } else if (line.includes('- [x]')) {
+        splitLines[lineIdx] = line.replace('- [x]', '- [ ]');
+      } else if (line.includes('- [X]')) {
+        splitLines[lineIdx] = line.replace('- [X]', '- [ ]');
+      }
+      setNotes(splitLines.join('\n'));
+    }
+  };
+
   const handleCopyLink = () => {
     if (!ticket) return;
     const shareUrl = `${window.location.origin}${window.location.pathname}?ticketId=${ticket.id}`;
@@ -471,7 +486,7 @@ export default function TicketDrawer({
                   />
                 ) : (
                   <div className="flex-1 min-h-[140px] max-h-[280px] w-full p-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/80 rounded-lg overflow-y-auto" id="markdown-preview-container">
-                    {parseMarkdown(notes)}
+                    {parseMarkdown(notes, handleToggleCheckbox)}
                   </div>
                 )}
               </div>
@@ -687,9 +702,9 @@ function renderInlineMarkdown(text: string): string {
   return html;
 }
 
-function parseMarkdown(text: string) {
+function parseMarkdown(text: string, onToggleCheckbox?: (lineIdx: number) => void) {
   if (!text || !text.trim()) {
-    return <p className="text-slate-400 dark:text-slate-500 italic text-xs">No description or notes provided. Write some Markdown above!</p>;
+    return <p className="text-slate-400 dark:text-slate-505 italic text-xs">No description or notes provided. Write some Markdown above!</p>;
   }
   
   const escaped = text
@@ -806,13 +821,25 @@ function parseMarkdown(text: string) {
             );
           case 'checklist':
             return (
-              <div key={block.id} className="space-y-1 pl-1 my-1 select-none">
-                {block.items?.map((item: any, i: number) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <input type="checkbox" checked={item.checked} readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
-                    <span className={item.checked ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-300"} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }} />
-                  </div>
-                ))}
+              <div key={block.id} className="space-y-1.5 pl-1 my-1 select-none">
+                {block.items?.map((item: any, i: number) => {
+                  const lineIdx = block.id + i;
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => onToggleCheckbox?.(lineIdx)}
+                      className="flex items-start gap-2 cursor-pointer hover:bg-slate-100/50 dark:hover:bg-slate-950/40 p-1 rounded transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.checked}
+                        readOnly
+                        className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span className={item.checked ? "line-through text-slate-400 dark:text-slate-550" : "text-slate-705 dark:text-slate-300"} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }} />
+                    </div>
+                  );
+                })}
               </div>
             );
           case 'blockquote':

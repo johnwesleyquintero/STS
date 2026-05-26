@@ -14,6 +14,7 @@ import QuickAdd from './components/QuickAdd';
 import TicketList from './components/TicketList';
 import KanbanBoard from './components/KanbanBoard';
 import TicketDrawer from './components/TicketDrawer';
+import { motion, AnimatePresence } from 'motion/react';
 
 import {
   Inbox,
@@ -31,6 +32,7 @@ import {
   User as UserIcon,
   Sun,
   Moon,
+  Keyboard,
 } from 'lucide-react';
 
 const ScaleSmartLogo = ({ size = 24, className = "" }: { size?: number; className?: string }) => {
@@ -140,6 +142,7 @@ export default function App() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showLogsPanel, setShowLogsPanel] = useState(false);
+  const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
   // Lifted filtering, search, and sorting states for global synchronization
   const [searchTerm, setSearchTerm] = useState('');
@@ -254,6 +257,10 @@ export default function App() {
           setShowSheetLinker(false);
           closedSomething = true;
         }
+        if (showShortcutsDialog) {
+          setShowShortcutsDialog(false);
+          closedSomething = true;
+        }
         if (closedSomething) {
           e.preventDefault();
           // If any input is focused, blur it to clean focus state
@@ -300,7 +307,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawerOpen, showLogsPanel, showSheetLinker, currentView]);
+  }, [isDrawerOpen, showLogsPanel, showSheetLinker, showShortcutsDialog, currentView]);
 
   // Load offline tickets/logs from LocalStorage
   const loadOfflineData = () => {
@@ -1018,6 +1025,16 @@ export default function App() {
             <History className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           </button>
 
+          {/* Keyboard shortcuts helper button */}
+          <button
+            id="header-shortcuts-help-btn"
+            onClick={() => setShowShortcutsDialog(true)}
+            title="View app keyboard shortcuts"
+            className="p-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center cursor-pointer shadow-3xs hover:shadow-2xs select-none h-9 w-9"
+          >
+            <Keyboard className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+          </button>
+
           {sessionMode === 'online' && user && (
             <div className="flex items-center gap-2 border-l border-slate-250 dark:border-slate-800 pl-2.5">
               {user.photoURL ? (
@@ -1280,6 +1297,93 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Keyboard shortcuts overlay modal dialog */}
+      <AnimatePresence>
+        {showShortcutsDialog && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              id="shortcuts-dialog-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowShortcutsDialog(false)}
+              className="fixed inset-0 bg-black/60 z-50"
+            />
+            {/* Modal Dialog container */}
+            <motion.div
+              id="shortcuts-dialog"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="fixed inset-x-4 top-[20%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-md bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl shadow-2xl p-6 z-55 overflow-hidden font-sans"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-150 dark:border-slate-850">
+                <div className="flex items-center gap-2">
+                  <Keyboard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 font-display">System Keyboard Shortcuts</h3>
+                </div>
+                <button
+                  onClick={() => setShowShortcutsDialog(false)}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center justify-between text-xs py-1">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-slate-705 dark:text-slate-200">Global Search Searchbar Focus</p>
+                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500">Focuses the global search bar across active tabs</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 font-mono">
+                    <kbd className="px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-bold text-slate-700 dark:text-slate-300 shadow-2xs">⌘ K</kbd>
+                    <span className="text-[10px] text-slate-400">or</span>
+                    <kbd className="px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-bold text-slate-700 dark:text-slate-300 shadow-2xs">/</kbd>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs py-1 border-t border-slate-100 dark:border-slate-900">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-slate-750 dark:text-slate-205">Quick Add Capture Focus</p>
+                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500">Jump directly to the title field of the quick adder</p>
+                  </div>
+                  <kbd className="px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-bold text-slate-700 dark:text-slate-305 shadow-2xs font-mono shrink-0">Alt + N</kbd>
+                </div>
+
+                <div className="flex items-center justify-between text-xs py-1 border-t border-slate-100 dark:border-slate-900">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-slate-750 dark:text-slate-205">Escape Active Workspace</p>
+                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500">Closes the drawer menus and clears item highlights</p>
+                  </div>
+                  <kbd className="px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-bold text-slate-700 dark:text-slate-305 shadow-2xs font-mono shrink-0">Esc</kbd>
+                </div>
+
+                <div className="flex items-center justify-between text-xs py-1 border-t border-slate-100 dark:border-slate-900">
+                  <div className="space-y-0.5">
+                    <p className="font-bold text-slate-750 dark:text-slate-205">Batch Multi-Select</p>
+                    <p className="text-[10.5px] text-slate-400 dark:text-slate-500">Select multiple items in the list for bulk priority/status changes</p>
+                  </div>
+                  <kbd className="px-1.5 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-[9.5px] font-bold text-slate-700 dark:text-slate-305 shadow-2xs font-mono shrink-0">Shift + Click</kbd>
+                </div>
+              </div>
+
+              {/* Tip info panel */}
+              <div className="mt-5 p-3 rounded-xl bg-blue-50/10 dark:bg-blue-950/10 border border-blue-200/20 dark:border-blue-900/40 text-[11px] leading-relaxed text-blue-600 dark:text-blue-400 flex items-start gap-2">
+                <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  Speed up your operational workflow. Designed for high-velocity operations, most common tasks do not require mouse interactions.
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
