@@ -63,8 +63,11 @@ Tickets follow a rigorous operational delivery pipeline to ensure execution velo
 
 ## 🛠️ Key Capabilities
 
-- **Fluid Dual-View Navigation:** Toggle dynamically between a comprehensive, filterable **Ticket Queue List View** with multi-select bulk operations and a visual, tactile **Kanban Board** with drag-and-drop.
+- **Fluid Dual-View Navigation:** Toggle dynamically between a comprehensive, filterable **Ticket Queue List View** with multi-select bulk operations and a visual, tactile **Kanban Board** with drag-and-drop support.
+- **Dynamic Search & Synchronized Filters:** Find tickets instantly based on ID, title, notes, or tags. Filter dynamically across statuses, priorities, and custom categories.
 - **Robust Multi-Select Bulk Actions:** Query, select, and process action pools in seconds with our floating responsive bulk actions panel (shift status, update priorities, prepend tags, or wipe/delete).
+- **Direct Clipboard Helpers:** Copy full Ticket IDs directly to your clipboard in a single click from Kanban cards, lists, or the detailed drawer header—styled with immediate visual toast ticks for status feedback.
+- **Pragmatic CSV Portability:** Instantly export your current, active, or filtered ticket queues into a clean, standard CSV sheet with proper field escaping in both layout views.
 - **Google Sheets Two-Way Flow:** Synchronize your boards in real-time with an active spreadsheet backed by Firebase Authentication.
 - **Intelligent Offline-First Fallback:** Seamlessly capture tickets and complete logs offline. Safe local storage structures keep data completely secure and offer manual sync triggers once connection is established.
 - **Custom Aesthetic Detailing:** Beautiful, eye-safe midnight slate visual canvas using refined typography pairing (Inter headings and JetBrains Mono status meters).
@@ -128,4 +131,5 @@ If you encounter a `Sign in error: FirebaseError: Firebase: Error (auth/unauthor
 ## 🎨 Visual System
 
 - **Primary Type Pairing:** Inter & JetBrains Mono (specifically for queue ID tags, metrics headers, and changelog stamps)
-- **Visual Contrast Elements:** Soft slate frames, responsive micro-interactions via Framer Motion, and distinct priority badges (P0 &rarr; P3).
+- **Universal Adaptive Dropdowns:** Fully customized light and dark theme styling applied dynamically to system select menus and native `<option>` tags, preventing standard browser overrides from degrading visual contrast.
+- **Visual Contrast Elements:** Soft slate frames, responsive micro-interactions via Framer Motion, and high-impact color-coded priority badges and hover states (Rose for P0, Blue for P1, Amber for P2, and Slate for P3).
