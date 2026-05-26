@@ -575,76 +575,139 @@ function parseMarkdown(text: string) {
     return <p className="text-slate-400 dark:text-slate-500 italic text-xs">No description or notes provided. Write some Markdown above!</p>;
   }
   
-  // Safe simple escape to prevent script injection but let us draw custom tags
   const escaped = text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
     
   const lines = escaped.split('\n');
+  const blocks: Array<{
+    type: 'p' | 'h1' | 'h2' | 'h3' | 'ul' | 'blockquote' | 'checklist' | 'spacer';
+    id: number;
+    items?: Array<{ text: string; checked?: boolean }>;
+    content?: string;
+  }> = [];
+
+  let currentBlock: any = null;
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    
+    // Checklist check
+    const isChecked = line.startsWith('- [x]') || line.startsWith('- [X]');
+    const isUnchecked = line.startsWith('- [ ]');
+    
+    if (isChecked || isUnchecked) {
+      const rawText = line.substring(5).trim();
+      const item = { text: rawText, checked: isChecked };
+      if (currentBlock && currentBlock.type === 'checklist') {
+        currentBlock.items.push(item);
+      } else {
+        currentBlock = { type: 'checklist', id: idx, items: [item] };
+        blocks.push(currentBlock);
+      }
+      return;
+    }
+
+    // Bullet checking
+    const isBullet = line.startsWith('- ') || line.startsWith('* ');
+    if (isBullet) {
+      const rawText = line.substring(2);
+      if (currentBlock && currentBlock.type === 'ul') {
+        currentBlock.items.push({ text: rawText });
+      } else {
+        currentBlock = { type: 'ul', id: idx, items: [{ text: rawText }] };
+        blocks.push(currentBlock);
+      }
+      return;
+    }
+
+    // Headers
+    if (line.startsWith('### ')) {
+      currentBlock = { type: 'h3', id: idx, content: line.substring(4) };
+      blocks.push(currentBlock);
+      return;
+    }
+    if (line.startsWith('## ')) {
+      currentBlock = { type: 'h2', id: idx, content: line.substring(3) };
+      blocks.push(currentBlock);
+      return;
+    }
+    if (line.startsWith('# ')) {
+      currentBlock = { type: 'h1', id: idx, content: line.substring(2) };
+      blocks.push(currentBlock);
+      return;
+    }
+
+    // Blockquote
+    if (line.startsWith('&gt; ') || line.startsWith('> ')) {
+      const rawText = line.startsWith('&gt; ') ? line.substring(5) : line.substring(2);
+      if (currentBlock && currentBlock.type === 'blockquote') {
+        currentBlock.content += '\n' + rawText;
+      } else {
+        currentBlock = { type: 'blockquote', id: idx, content: rawText };
+        blocks.push(currentBlock);
+      }
+      return;
+    }
+
+    // Spacers / Empty lines
+    if (trimmed === '') {
+      currentBlock = { type: 'spacer', id: idx };
+      blocks.push(currentBlock);
+      return;
+    }
+
+    // Plain paragraph text
+    if (currentBlock && currentBlock.type === 'p') {
+      currentBlock.content += '\n' + line;
+    } else {
+      currentBlock = { type: 'p', id: idx, content: line };
+      blocks.push(currentBlock);
+    }
+  });
+
   return (
-    <div className="space-y-2 text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-sans">
-      {lines.map((line, idx) => {
-        let content = line;
-        
-        // Checklist items: - [ ] or - [x]
-        const isCheckedList = content.startsWith('- [x]') || content.startsWith('- [X]');
-        const isUncheckedList = content.startsWith('- [ ]');
-        if (isCheckedList) {
-          const rawText = content.substring(5).trim();
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1 select-none">
-              <input type="checkbox" checked readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
-              <span className="line-through text-slate-400 dark:text-slate-500" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
-            </div>
-          );
+    <div className="space-y-2 text-xs leading-relaxed text-slate-705 dark:text-slate-300 font-sans">
+      {blocks.map((block) => {
+        switch (block.type) {
+          case 'spacer':
+            return <div key={block.id} className="h-1.5" />;
+          case 'h1':
+            return <h3 key={block.id} className="text-base font-bold text-slate-900 dark:text-white mt-4 mb-1 border-b border-slate-200 dark:border-slate-800 pb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content || '') }} />;
+          case 'h2':
+            return <h4 key={block.id} className="text-sm font-bold text-slate-900 dark:text-white mt-3.5 mb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content || '') }} />;
+          case 'h3':
+            return <h5 key={block.id} className="text-xs font-bold text-slate-900 dark:text-white mt-3 mb-0.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content || '') }} />;
+          case 'ul':
+            return (
+              <ul key={block.id} className="list-disc pl-5 space-y-1 my-1">
+                {block.items?.map((item: any, i: number) => (
+                  <li key={i} className="text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }} />
+                ))}
+              </ul>
+            );
+          case 'checklist':
+            return (
+              <div key={block.id} className="space-y-1 pl-1 my-1 select-none">
+                {block.items?.map((item: any, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <input type="checkbox" checked={item.checked} readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
+                    <span className={item.checked ? "line-through text-slate-400 dark:text-slate-500" : "text-slate-700 dark:text-slate-300"} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }} />
+                  </div>
+                ))}
+              </div>
+            );
+          case 'blockquote':
+            return (
+              <blockquote key={block.id} className="border-l-2 border-slate-400 dark:border-slate-600 pl-3 italic text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-950/40 p-1.5 rounded-r my-1 whitespace-pre-line">
+                <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content || '') }} />
+              </blockquote>
+            );
+          case 'p':
+          default:
+            return <p key={block.id} className="text-slate-700 dark:text-slate-300 animate-fade-in" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(block.content || '') }} />;
         }
-        if (isUncheckedList) {
-          const rawText = content.substring(5).trim();
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1 select-none">
-              <input type="checkbox" checked={false} readOnly className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 pointer-events-none" />
-              <span className="text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
-            </div>
-          );
-        }
-
-        // Headers
-        if (content.startsWith('### ')) {
-          return <h5 key={idx} className="text-xs font-bold text-slate-900 dark:text-white mt-3 mb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(4)) }} />;
-        }
-        if (content.startsWith('## ')) {
-          return <h4 key={idx} className="text-sm font-bold text-slate-900 dark:text-white mt-4 mb-1.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(3)) }} />;
-        }
-        if (content.startsWith('# ')) {
-          return <h3 key={idx} className="text-base font-bold text-slate-900 dark:text-white mt-5 mb-2 border-b border-slate-200 dark:border-slate-800 pb-1" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />;
-        }
-        
-        // Bullet list
-        if (content.startsWith('- ') || content.startsWith('* ')) {
-          return (
-            <ul key={idx} className="list-disc pl-5 space-y-0.5">
-              <li className="text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content.substring(2)) }} />
-            </ul>
-          );
-        }
-
-        // Blockquote
-        if (content.startsWith('&gt; ') || content.startsWith('> ')) {
-          const rawText = content.startsWith('&gt; ') ? content.substring(5) : content.substring(2);
-          return (
-            <blockquote key={idx} className="border-l-2 border-slate-400 dark:border-slate-600 pl-3 italic text-slate-500 dark:text-slate-400 bg-slate-100/50 dark:bg-slate-950/40 p-1.5 rounded-r">
-              <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(rawText) }} />
-            </blockquote>
-          );
-        }
-        
-        // Plain paragraphs or empty lines
-        if (content.trim() === '') {
-          return <div key={idx} className="h-1.5" />;
-        }
-        
-        return <p key={idx} className="text-slate-700 dark:text-slate-300 animate-fade-in" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(content) }} />;
       })}
     </div>
   );

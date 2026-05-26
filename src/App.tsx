@@ -236,6 +236,72 @@ export default function App() {
     }
   }, [tickets]);
 
+  // 3. Global Keyboard Shortcuts & Accessibility Keydowns
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Universal Escape handler
+      if (e.key === 'Escape') {
+        let closedSomething = false;
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false);
+          closedSomething = true;
+        }
+        if (showLogsPanel) {
+          setShowLogsPanel(false);
+          closedSomething = true;
+        }
+        if (showSheetLinker) {
+          setShowSheetLinker(false);
+          closedSomething = true;
+        }
+        if (closedSomething) {
+          e.preventDefault();
+          // If any input is focused, blur it to clean focus state
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+        }
+        return;
+      }
+
+      // Detect if user is currently typing in an input or textarea
+      const target = e.target as HTMLElement | null;
+      const isTyping = target && (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable
+      );
+
+      if (isTyping) return;
+
+      // 2. Focused Global Search (Cmd+K, Ctrl+K, or '/')
+      if (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
+        const searchInput = document.getElementById(
+          currentView === 'queue' ? 'ticket-search-input' : 'kanban-search-input'
+        );
+        if (searchInput) {
+          e.preventDefault();
+          searchInput.focus();
+          if (searchInput instanceof HTMLInputElement) {
+            searchInput.select();
+          }
+        }
+      }
+
+      // 3. Quick Capture focus (Alt+N)
+      if (e.altKey && e.key.toLowerCase() === 'n') {
+        const titleInput = document.getElementById('quick-add-title-input');
+        if (titleInput) {
+          e.preventDefault();
+          titleInput.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen, showLogsPanel, showSheetLinker, currentView]);
+
   // Load offline tickets/logs from LocalStorage
   const loadOfflineData = () => {
     const storedTickets = localStorage.getItem('sts_offline_tickets');

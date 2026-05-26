@@ -67,6 +67,7 @@ export default function TicketList({
 }: TicketListProps) {
   // Multi-selection states
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [bulkTagInput, setBulkTagInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -182,10 +183,33 @@ export default function TicketList({
   const uniqueTags = Array.from(new Set(tickets.flatMap((t) => t.tags))).filter(Boolean);
 
   // Selector functions
-  const toggleSelectTicket = (id: string) => {
+  const toggleSelectTicket = (id: string, shiftKey: boolean = false) => {
+    if (shiftKey && lastSelectedId && lastSelectedId !== id) {
+      const sortedIds = sortedTickets.map((t) => t.id);
+      const lastIndex = sortedIds.indexOf(lastSelectedId);
+      const currentIndex = sortedIds.indexOf(id);
+
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const [start, end] = lastIndex < currentIndex ? [lastIndex, currentIndex] : [currentIndex, lastIndex];
+        const idsInRange = sortedIds.slice(start, end + 1);
+        const willSelect = !selectedIds.includes(id);
+
+        setSelectedIds((prev) => {
+          if (willSelect) {
+            return Array.from(new Set([...prev, ...idsInRange]));
+          } else {
+            return prev.filter((prevId) => !idsInRange.includes(prevId));
+          }
+        });
+        setLastSelectedId(id);
+        return;
+      }
+    }
+
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+    setLastSelectedId(id);
   };
 
   const handleSelectAllVisible = () => {
@@ -246,7 +270,7 @@ export default function TicketList({
               id="ticket-search-input"
               type="text"
               className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Search by ID, title, tags, notes..."
+              placeholder="Search by ID, title, tags, notes... (Press '/' or ⌘K to focus)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -474,10 +498,10 @@ export default function TicketList({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleSelectTicket(ticket.id);
+                          toggleSelectTicket(ticket.id, e.shiftKey);
                         }}
                         className="mt-0.5 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer text-slate-400 hover:text-slate-600"
-                        title="Mass Action Toggle"
+                        title="Mass Action Toggle (Shift-click to select range)"
                       >
                         {isSelected ? (
                           <CheckSquare className="w-4 h-4 text-blue-600" />

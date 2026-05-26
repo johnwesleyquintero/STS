@@ -216,7 +216,7 @@ export default function KanbanBoard({
               id="kanban-search-input"
               type="text"
               className="w-full pl-9 pr-9 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
-              placeholder="Search Kanban tickets..."
+              placeholder="Search Kanban tickets... (Press '/' or ⌘K to focus)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

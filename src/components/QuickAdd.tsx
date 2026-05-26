@@ -44,7 +44,7 @@ export default function QuickAdd({ onAddTicket }: QuickAddProps) {
             id="quick-add-title-input"
             type="text"
             className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white dark:focus:bg-slate-900 transition-all"
-            placeholder="What needs to be done? Press Enter to capture instantly..."
+            placeholder="What needs to be done? (Alt + N to focus, Enter to capture instantly)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
