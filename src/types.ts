@@ -15,6 +15,7 @@ export interface Ticket {
   notes: string;
   tags: string[];
   source: TicketSource;
+  dependencies?: string[];
   createdAt: string;
   updatedAt: string;
 }

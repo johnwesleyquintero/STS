@@ -1237,6 +1237,7 @@ export default function App() {
         ticket={selectedTicket}
         onSave={handleSaveTicket}
         onDelete={handleDeleteTicket}
+        allTickets={tickets}
       />
       {/* Side slide activity logs list drawer */}
       <div id="logs-slide-viewport" className={`fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-y-auto flex flex-col transition-transform transform ${

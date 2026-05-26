@@ -15,7 +15,8 @@ import {
   X,
   Copy,
   Download,
-  Check
+  Check,
+  Link
 } from 'lucide-react';
 
 interface KanbanBoardProps {
@@ -430,6 +431,29 @@ export default function KanbanBoard({
                         >
                           {ticket.title}
                         </p>
+
+                        {/* Dependencies count on Kanban card */}
+                        {ticket.dependencies && ticket.dependencies.length > 0 && (() => {
+                          const totalDeps = ticket.dependencies.length;
+                          const incompleteDeps = ticket.dependencies.filter(depId => {
+                            const t = tickets.find(x => x.id === depId);
+                            return t && t.status !== 'Done';
+                          });
+                          const isBlocked = incompleteDeps.length > 0;
+                          return (
+                            <div 
+                              className={`mt-2 flex items-center gap-1 w-fit px-1.5 py-0.5 rounded text-[8px] font-bold border transition-all ${
+                                isBlocked 
+                                  ? 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/20 dark:border-amber-900 dark:text-amber-400' 
+                                  : 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-900 dark:text-emerald-400'
+                              }`}
+                              title={`Depends on: ${ticket.dependencies.join(', ')}. ${isBlocked ? `Incomplete blockers: ${incompleteDeps.join(', ')}` : 'All blockers resolved!'}`}
+                            >
+                              <Link className="w-2 h-2 shrink-0" />
+                              <span>{isBlocked ? `Blocked (${incompleteDeps.length}/${totalDeps})` : `Ready (${totalDeps}/${totalDeps})`}</span>
+                            </div>
+                          );
+                        })()}
 
                         {/* Tags list */}
                         {ticket.tags.length > 0 && (

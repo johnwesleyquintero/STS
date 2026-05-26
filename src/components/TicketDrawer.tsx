@@ -9,9 +9,17 @@ interface TicketDrawerProps {
   ticket: Ticket | null; // Null means creating a new ticket
   onSave: (ticket: Ticket) => void;
   onDelete: (id: string) => void;
+  allTickets?: Ticket[];
 }
 
-export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete }: TicketDrawerProps) {
+export default function TicketDrawer({ 
+  isOpen, 
+  onClose, 
+  ticket, 
+  onSave, 
+  onDelete,
+  allTickets = []
+}: TicketDrawerProps) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TicketType>('Task');
   const [priority, setPriority] = useState<TicketPriority>('P2');
@@ -25,6 +33,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
   const [showMarkdownHelp, setShowMarkdownHelp] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [dependencies, setDependencies] = useState<string[]>([]);
 
   useEffect(() => {
     setShowDeleteConfirm(false);
@@ -41,6 +50,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
       setTags(ticket.tags);
       setTagsInput(ticket.tags.join(', '));
       setSource(ticket.source);
+      setDependencies(ticket.dependencies || []);
     } else {
       // Clear form for new ticket
       setTitle('');
@@ -51,6 +61,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
       setTags([]);
       setTagsInput('');
       setSource('Manual');
+      setDependencies([]);
     }
   }, [ticket, isOpen]);
 
@@ -106,6 +117,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
       notes,
       tags,
       source: ticket ? ticket.source : 'Manual',
+      dependencies,
       createdAt: ticket ? ticket.createdAt : now,
       updatedAt: now,
     };
@@ -507,6 +519,111 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                         </button>
                       </span>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Dependencies & Blockers Section */}
+              <div className="space-y-2 border-t border-slate-100 dark:border-slate-800/80 pt-4">
+                <label className="text-xs font-bold text-slate-550 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                  <Link className="w-3.5 h-3.5 text-slate-400" />
+                  Ticket Dependencies (Blocked By)
+                </label>
+                
+                {/* Current Dependencies List */}
+                <div className="space-y-1.5" id="dependencies-current-list">
+                  {dependencies.length === 0 ? (
+                    <p className="text-slate-400 dark:text-slate-500 italic text-xs">No active dependency tasks. This ticket is unblocked.</p>
+                  ) : (
+                    dependencies.map((depId) => {
+                      const depTicket = allTickets.find(t => t.id === depId);
+                      if (!depTicket) return null;
+                      return (
+                        <div 
+                          key={depId} 
+                          className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-950/45 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
+                        >
+                          <div className="flex items-center gap-2 overflow-hidden flex-1 min-w-0">
+                            <span className="font-mono font-bold text-blue-600 dark:text-blue-400 shrink-0">{depTicket.id}</span>
+                            <span className="text-slate-700 dark:text-slate-300 truncate font-semibold flex-1">{depTicket.title}</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                              depTicket.status === 'Done' 
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' 
+                                : depTicket.status === 'Blocked' 
+                                ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
+                            }`}>
+                              {depTicket.status}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDependencies(prev => prev.filter(id => id !== depId))}
+                            className="text-rose-650 hover:text-rose-700 font-bold px-1.5 py-0.5 text-xs hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-all cursor-pointer select-none"
+                            title="Remove dependency"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Selector for adding new dependencies */}
+                {allTickets.filter(t => t.id !== ticket?.id && !dependencies.includes(t.id)).length > 0 && (
+                  <div className="flex gap-2 pt-1.5" id="dependencies-add-container">
+                    <select
+                      id="dependency-ticket-select"
+                      className="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-150 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                      defaultValue=""
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val && !dependencies.includes(val)) {
+                          setDependencies(prev => [...prev, val]);
+                        }
+                        e.target.value = ""; // Reset select target after adding
+                      }}
+                    >
+                      <option value="" className="text-slate-400">-- Select a ticket to add as dependency --</option>
+                      {allTickets
+                        .filter((t) => t.id !== ticket?.id && !dependencies.includes(t.id))
+                        .map((t) => (
+                          <option key={t.id} value={t.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                            [{t.id}] {t.type} • {t.title.substring(0, 48)}{t.title.length > 48 ? '...' : ''} ({t.status})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Visual blocking relationship: show which other tickets depend on THIS ticket */}
+                {ticket && allTickets.filter(t => t.dependencies?.includes(ticket.id)).length > 0 && (
+                  <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-805" id="blocked-by-this-container">
+                    <span className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-500 tracking-wider block mb-1.5 font-mono">
+                      Blocked Tickets (depending on this task)
+                    </span>
+                    <div className="space-y-1.5">
+                      {allTickets
+                        .filter(t => t.dependencies?.includes(ticket.id))
+                        .map(blockedTicket => (
+                          <div 
+                            key={blockedTicket.id}
+                            className="flex items-center gap-2 p-1.5 bg-rose-50/20 dark:bg-rose-955/10 border border-rose-100/50 dark:border-rose-900/20 rounded-lg text-xs"
+                          >
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-450 shrink-0">{blockedTicket.id}</span>
+                            <span className="text-slate-650 dark:text-slate-400 select-none truncate flex-1 font-semibold">{blockedTicket.title}</span>
+                            <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                              blockedTicket.status === 'Done' 
+                                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300' 
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
+                            }`}>
+                              {blockedTicket.status}
+                            </span>
+                          </div>
+                        ))
+                      }
+                    </div>
                   </div>
                 )}
               </div>

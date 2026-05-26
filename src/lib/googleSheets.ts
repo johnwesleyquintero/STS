@@ -43,7 +43,7 @@ export async function createSpreadsheet(accessToken: string): Promise<string> {
           title: 'Tickets',
           gridProperties: {
             frozenRowCount: 1,
-            columnCount: 10,
+            columnCount: 11,
           },
         },
       },
@@ -97,19 +97,20 @@ async function writeHeaders(accessToken: string, spreadsheetId: string): Promise
     'Source',
     'Created At',
     'Updated At',
+    'Dependencies',
   ];
 
   const logHeaders = ['Timestamp', 'Ticket ID', 'Action', 'Details'];
 
   // Write Tickets headers
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A1:J1?valueInputOption=USER_ENTERED`, {
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A1:K1?valueInputOption=USER_ENTERED`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      range: 'Tickets!A1:J1',
+      range: 'Tickets!A1:K1',
       majorDimension: 'ROWS',
       values: [ticketsHeaders],
     }),
@@ -134,7 +135,7 @@ async function writeHeaders(accessToken: string, spreadsheetId: string): Promise
  * Pull the list of tickets from Google Sheets
  */
 export async function fetchSpreadsheetTickets(accessToken: string, spreadsheetId: string): Promise<Ticket[]> {
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:J1000`, {
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:K1000`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -159,6 +160,7 @@ export async function fetchSpreadsheetTickets(accessToken: string, spreadsheetId
       source: (row[7] || 'Manual') as TicketSource,
       createdAt: row[8] || new Date().toISOString(),
       updatedAt: row[9] || new Date().toISOString(),
+      dependencies: row[10]?.trim() ? row[10].split(',').map((d: string) => d.trim()).filter(Boolean) : [],
     };
   });
 }
@@ -169,7 +171,7 @@ export async function fetchSpreadsheetTickets(accessToken: string, spreadsheetId
  */
 export async function syncSpreadsheetTickets(accessToken: string, spreadsheetId: string, tickets: Ticket[]): Promise<void> {
   // 1. Clear current values
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:J1000:clear`, {
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:K1000:clear`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -192,17 +194,18 @@ export async function syncSpreadsheetTickets(accessToken: string, spreadsheetId:
     t.source,
     t.createdAt,
     t.updatedAt,
+    (t.dependencies || []).join(', '),
   ]);
 
   // 3. Write rows
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:J${tickets.length + 1}?valueInputOption=USER_ENTERED`, {
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:K${tickets.length + 1}?valueInputOption=USER_ENTERED`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      range: `Tickets!A2:J${tickets.length + 1}`,
+      range: `Tickets!A2:K${tickets.length + 1}`,
       majorDimension: 'ROWS',
       values: rows,
     }),
