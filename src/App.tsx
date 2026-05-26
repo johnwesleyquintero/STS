@@ -29,6 +29,8 @@ import {
   X,
   Plus,
   User as UserIcon,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const ScaleSmartLogo = ({ size = 24, className = "" }: { size?: number; className?: string }) => {
@@ -141,6 +143,29 @@ export default function App() {
 
   // Toast system
   const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'info' | 'error' }[]>([]);
+
+  // Theme support
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('sts_theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // Sync theme class with document element for Tailwind dark: prefix
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('sts_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('sts_theme', 'light');
+    }
+  }, [isDarkMode]);
 
   const addToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     const id = Math.random().toString(36).slice(2);
@@ -616,7 +641,23 @@ export default function App() {
   if (sessionMode === null) {
     // Elegant Auth Greeting Card Screen
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6" id="welcome-auth-viewport">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 relative" id="welcome-auth-viewport">
+        {/* Floating Theme Toggle in top-right */}
+        <div className="absolute top-4 right-4">
+          <button
+            id="auth-theme-toggle"
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl text-slate-650 dark:text-slate-350 flex items-center justify-center cursor-pointer shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
+          >
+            {isDarkMode ? (
+              <Sun className="w-4.5 h-4.5 text-amber-500" />
+            ) : (
+              <Moon className="w-4.5 h-4.5 text-indigo-500" />
+            )}
+          </button>
+        </div>
+
         <div className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-800/80 p-8 rounded-2xl shadow-xl space-y-8 relative overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 animate-pulse"></div>
 
@@ -848,6 +889,26 @@ export default function App() {
 
         {/* Sync, Logs, and User Profile menu */}
         <div className="flex items-center justify-end gap-2.5">
+          {/* Theme toggler button */}
+          <button
+            id="header-theme-toggle-btn"
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="p-1 px-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg text-xs hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-350 flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs font-bold"
+          >
+            {isDarkMode ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-550" />
+                <span>Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5 text-indigo-505" />
+                <span>Dark Mode</span>
+              </>
+            )}
+          </button>
+
           {/* Manual sync button */}
           <button
             id="header-manual-sync-btn"
