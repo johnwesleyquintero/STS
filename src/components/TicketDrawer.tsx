@@ -270,7 +270,7 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                     onChange={(e) => setStatus(e.target.value as TicketStatus)}
                   >
                     {ticketStatuses.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                         {s}
                       </option>
                     ))}
@@ -287,10 +287,10 @@ export default function TicketDrawer({ isOpen, onClose, ticket, onSave, onDelete
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as TicketPriority)}
                   >
-                    <option value="P0">P0 • Critical / Blocking</option>
-                    <option value="P1">P1 • Active Work</option>
-                    <option value="P2">P2 • Backlog</option>
-                    <option value="P3">P3 • Optional / Cleanup</option>
+                    <option value="P0" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">P0 • Critical / Blocking</option>
+                    <option value="P1" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 font-semibold">P1 • Active Work</option>
+                    <option value="P2" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">P2 • Backlog</option>
+                    <option value="P3" className="bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-semibold">P3 • Optional / Cleanup</option>
                   </select>
                 </div>
               </div>

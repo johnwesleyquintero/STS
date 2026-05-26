@@ -58,7 +58,7 @@ export default function QuickAdd({ onAddTicket }: QuickAddProps) {
               onChange={(e) => setType(e.target.value as TicketType)}
             >
               {types.map((t) => (
-                <option key={t} value={t}>
+                <option key={t} value={t} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
                   Type: {t}
                 </option>
               ))}

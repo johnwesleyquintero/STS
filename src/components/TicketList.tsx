@@ -238,11 +238,11 @@ export default function TicketList({
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="All">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Blocked">Blocked</option>
-                <option value="Done">Done</option>
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Statuses</option>
+                <option value="Open" className="bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300">Open</option>
+                <option value="In Progress" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300">In Progress</option>
+                <option value="Blocked" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300">Blocked</option>
+                <option value="Done" className="bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300">Done</option>
               </select>
             </div>
 
@@ -255,11 +255,11 @@ export default function TicketList({
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
               >
-                <option value="All">All Priorities</option>
-                <option value="P0">P0 - Critical</option>
-                <option value="P1">P1 - Active</option>
-                <option value="P2">P2 - Backlog</option>
-                <option value="P3">P3 - Optional</option>
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Priorities</option>
+                <option value="P0" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">P0 - Critical</option>
+                <option value="P1" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 font-semibold">P1 - Active</option>
+                <option value="P2" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">P2 - Backlog</option>
+                <option value="P3" className="bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-semibold">P3 - Optional</option>
               </select>
             </div>
 
@@ -272,13 +272,13 @@ export default function TicketList({
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
               >
-                <option value="All">All Types</option>
-                <option value="Task">Task</option>
-                <option value="Ops">Ops</option>
-                <option value="Bug">Bug</option>
-                <option value="Lead">Lead</option>
-                <option value="Catalog">Catalog</option>
-                <option value="System">System</option>
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Types</option>
+                <option value="Task" className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold">Task</option>
+                <option value="Ops" className="bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 font-semibold">Ops</option>
+                <option value="Bug" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">Bug</option>
+                <option value="Lead" className="bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 font-semibold">Lead</option>
+                <option value="Catalog" className="bg-white dark:bg-slate-900 text-fuchsia-700 dark:text-fuchsia-300 font-semibold">Catalog</option>
+                <option value="System" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">System</option>
               </select>
             </div>
 
@@ -292,11 +292,11 @@ export default function TicketList({
                 value={sortPreference}
                 onChange={(e) => setSortPreference(e.target.value)}
               >
-                <option value="priority">Priority (Default)</option>
-                <option value="updatedDesc">Last Updated (Newest)</option>
-                <option value="updatedAsc">Last Updated (Oldest)</option>
-                <option value="createdDesc">Created Date (Newest)</option>
-                <option value="titleAsc">Title (A-Z)</option>
+                <option value="priority" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Priority (Default)</option>
+                <option value="updatedDesc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Last Updated (Newest)</option>
+                <option value="updatedAsc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Last Updated (Oldest)</option>
+                <option value="createdDesc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Created Date (Newest)</option>
+                <option value="titleAsc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Title (A-Z)</option>
               </select>
             </div>
           </div>
@@ -535,10 +535,10 @@ export default function TicketList({
                             onChange={(e) => onUpdateStatus(ticket.id, e.target.value as TicketStatus)}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <option value="Open">Open</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Blocked">Blocked</option>
-                            <option value="Done">Done</option>
+                            <option value="Open" className="bg-white dark:bg-slate-900 text-purple-705 dark:text-purple-300">Open</option>
+                            <option value="In Progress" className="bg-white dark:bg-slate-900 text-blue-705 dark:text-blue-300">In Progress</option>
+                            <option value="Blocked" className="bg-white dark:bg-slate-900 text-amber-705 dark:text-amber-300">Blocked</option>
+                            <option value="Done" className="bg-white dark:bg-slate-900 text-emerald-705 dark:text-emerald-300">Done</option>
                           </select>
                         </div>
 
@@ -593,11 +593,11 @@ export default function TicketList({
                   value=""
                   onChange={(e) => e.target.value && handleBulkStatusChange(e.target.value as TicketStatus)}
                 >
-                  <option value="" disabled className="text-slate-500">Shift...</option>
-                  <option value="Open" className="text-slate-805">Open</option>
-                  <option value="In Progress" className="text-slate-805">In Progress</option>
-                  <option value="Blocked" className="text-slate-805">Blocked</option>
-                  <option value="Done" className="text-slate-805">Done</option>
+                  <option value="" disabled className="bg-slate-900 text-slate-400 dark:bg-slate-950">Shift...</option>
+                  <option value="Open" className="bg-slate-900 text-purple-400 dark:bg-slate-950 font-bold">Open</option>
+                  <option value="In Progress" className="bg-slate-900 text-blue-400 dark:bg-slate-950 font-bold">In Progress</option>
+                  <option value="Blocked" className="bg-slate-900 text-amber-400 dark:bg-slate-950 font-bold">Blocked</option>
+                  <option value="Done" className="bg-slate-900 text-emerald-400 dark:bg-slate-950 font-bold">Done</option>
                 </select>
               </div>
 
@@ -610,11 +610,11 @@ export default function TicketList({
                   value=""
                   onChange={(e) => e.target.value && handleBulkPriorityChange(e.target.value as TicketPriority)}
                 >
-                  <option value="" disabled className="text-slate-500">Shift...</option>
-                  <option value="P0" className="text-slate-805">P0 Critical</option>
-                  <option value="P1" className="text-slate-805">P1 Active</option>
-                  <option value="P2" className="text-slate-805">P2 Backlog</option>
-                  <option value="P3" className="text-slate-805">P3 Optional</option>
+                  <option value="" disabled className="bg-slate-900 text-slate-400 dark:bg-slate-950">Shift...</option>
+                  <option value="P0" className="bg-slate-900 text-rose-400 dark:bg-slate-950 font-bold">P0 Critical</option>
+                  <option value="P1" className="bg-slate-900 text-blue-400 dark:bg-slate-950 font-bold">P1 Active</option>
+                  <option value="P2" className="bg-slate-900 text-amber-400 dark:bg-slate-950 font-bold">P2 Backlog</option>
+                  <option value="P3" className="bg-slate-900 text-slate-400 dark:bg-slate-950 font-bold">P3 Optional</option>
                 </select>
               </div>
 

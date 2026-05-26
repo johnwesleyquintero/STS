@@ -207,11 +207,11 @@ export default function KanbanBoard({
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
               >
-                <option value="All">All Priorities</option>
-                <option value="P0">P0 - Critical</option>
-                <option value="P1">P1 - Active</option>
-                <option value="P2">P2 - Backlog</option>
-                <option value="P3">P3 - Optional</option>
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Priorities</option>
+                <option value="P0" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">P0 - Critical</option>
+                <option value="P1" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 font-semibold">P1 - Active</option>
+                <option value="P2" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">P2 - Backlog</option>
+                <option value="P3" className="bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-semibold">P3 - Optional</option>
               </select>
             </div>
 
@@ -224,13 +224,13 @@ export default function KanbanBoard({
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
               >
-                <option value="All">All Types</option>
-                <option value="Task">Task</option>
-                <option value="Ops">Ops</option>
-                <option value="Bug">Bug</option>
-                <option value="Lead">Lead</option>
-                <option value="Catalog">Catalog</option>
-                <option value="System">System</option>
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Types</option>
+                <option value="Task" className="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-semibold">Task</option>
+                <option value="Ops" className="bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 font-semibold">Ops</option>
+                <option value="Bug" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">Bug</option>
+                <option value="Lead" className="bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 font-semibold">Lead</option>
+                <option value="Catalog" className="bg-white dark:bg-slate-900 text-fuchsia-700 dark:text-fuchsia-300 font-semibold">Catalog</option>
+                <option value="System" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">System</option>
               </select>
             </div>
           </div>
@@ -303,7 +303,7 @@ export default function KanbanBoard({
                   <Icon className={`w-4 h-4 ${col.color}`} />
                   <h3 className="text-sm font-bold text-slate-700 dark:text-slate-100 tracking-tight font-display">{col.label}</h3>
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 px-2.5 py-0.5 rounded-full shadow-2xs">
+                <span className="text-xs font-mono font-bold text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-0.5 rounded-full shadow-2xs">
                   {colTickets.length}
                 </span>
               </div>
