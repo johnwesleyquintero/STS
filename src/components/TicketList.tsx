@@ -20,8 +20,11 @@ import {
   CircleAlert,
   Copy,
   Download,
-  Link
+  Link,
+  Calendar,
+  User
 } from 'lucide-react';
+import { getChecklistProgress, getDueDateStatus } from '../lib/utils';
 
 interface TicketListProps {
   tickets: Ticket[];
@@ -71,12 +74,13 @@ export default function TicketList({
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [bulkTagInput, setBulkTagInput] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
 
   const handleExportToCSV = () => {
     const ticketsToExport = sortedTickets;
     if (ticketsToExport.length === 0) return;
 
-    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'CreatedAt', 'UpdatedAt'];
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'Due Date', 'Assignee', 'CreatedAt', 'UpdatedAt'];
     const csvContent = [
       headers.join(','),
       ...ticketsToExport.map(t => [
@@ -88,6 +92,8 @@ export default function TicketList({
         t.notes || '',
         t.tags.join('; '),
         t.source,
+        t.dueDate || '',
+        t.assignee || '',
         t.createdAt,
         t.updatedAt,
       ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
@@ -140,20 +146,29 @@ export default function TicketList({
     const matchesPriority = priorityFilter === 'All' || t.priority === priorityFilter;
     const matchesType = typeFilter === 'All' || t.type === typeFilter;
     const matchesTag = !selectedTag || t.tags.includes(selectedTag);
+    const matchesAssignee =
+      assigneeFilter === 'All' ||
+      (assigneeFilter === 'Unassigned' && !t.assignee) ||
+      t.assignee === assigneeFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag;
+    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag && matchesAssignee;
   });
 
   // Reset multi-selectors whenever filters update to keep selection pristine and robust
   useEffect(() => {
     setSelectedIds([]);
-  }, [searchTerm, statusFilter, priorityFilter, typeFilter, selectedTag]);
+  }, [searchTerm, statusFilter, priorityFilter, typeFilter, selectedTag, assigneeFilter]);
 
   // Sorting logics
   const priorityWeight = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
   const sortedTickets = [...filteredTickets].sort((a, b) => {
     switch (sortPreference) {
+      case 'dueDateSoonest': {
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
       case 'updatedDesc':
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       case 'updatedAsc':
@@ -182,6 +197,8 @@ export default function TicketList({
 
   // Gather unique tags
   const uniqueTags = Array.from(new Set(tickets.flatMap((t) => t.tags))).filter(Boolean);
+  // Gather unique assignees
+  const uniqueAssignees = Array.from(new Set(tickets.map((t) => t.assignee).filter(Boolean))) as string[];
 
   // Selector functions
   const toggleSelectTicket = (id: string, shiftKey: boolean = false) => {
@@ -321,9 +338,7 @@ export default function TicketList({
                 <option value="P2" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">P2 - Backlog</option>
                 <option value="P3" className="bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-semibold">P3 - Optional</option>
               </select>
-            </div>
-
-            {/* Type Filter */}
+            </div>            {/* Type Filter */}
             <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Type</span>
               <select
@@ -342,6 +357,25 @@ export default function TicketList({
               </select>
             </div>
 
+            {/* Owner assignee filter block */}
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Owner</span>
+              <select
+                id="filter-assignee-select"
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 outline-hidden font-bold border-0 py-0.5 cursor-pointer max-w-[140px]"
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+              >
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Owners</option>
+                <option value="Unassigned" className="bg-white dark:bg-slate-900 text-slate-500 font-medium font-semibold">Unassigned</option>
+                {uniqueAssignees.map(email => (
+                  <option key={email} value={email} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    {email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Sort Preferences Selector */}
             <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
               <ArrowUpDown className="w-3 h-3 text-slate-400" />
@@ -353,6 +387,7 @@ export default function TicketList({
                 onChange={(e) => setSortPreference(e.target.value)}
               >
                 <option value="priority" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Priority (Default)</option>
+                <option value="dueDateSoonest" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Due Date (Soonest)</option>
                 <option value="updatedDesc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Last Updated (Newest)</option>
                 <option value="updatedAsc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Last Updated (Oldest)</option>
                 <option value="createdDesc" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">Created Date (Newest)</option>
@@ -589,6 +624,24 @@ export default function TicketList({
                               </span>
                             );
                           })()}
+
+                          {/* Due Date Pill */}
+                          {ticket.dueDate && (() => {
+                            const statusInfo = getDueDateStatus(ticket.dueDate);
+                            if (!statusInfo) return null;
+                            const colorMap = {
+                              overdue: 'text-rose-700 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:text-rose-300 dark:border-rose-900/60',
+                              today: 'text-amber-705 bg-amber-50 border-amber-205 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900/30',
+                              tomorrow: 'text-blue-700 bg-blue-50 border-blue-205 dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-900/30',
+                              incoming: 'text-slate-655 bg-slate-50 border-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800',
+                            };
+                            return (
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-bold border inline-flex items-center gap-1 ${colorMap[statusInfo.status]}`}>
+                                <Calendar className="w-2.5 h-2.5 shrink-0" />
+                                <span>{statusInfo.text}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {/* Title Text */}
@@ -629,15 +682,46 @@ export default function TicketList({
                             )}
                           </div>
                         )}
+
+                        {/* Checklist progress bar in list view */}
+                        {(() => {
+                          const progress = getChecklistProgress(ticket.notes);
+                          if (!progress) return null;
+                          const pct = Math.round((progress.completed / progress.total) * 100);
+                          return (
+                            <div className="mt-3.5 max-w-sm space-y-1" title={`${progress.completed}/${progress.total} subtasks completed`}>
+                              <div className="flex items-center justify-between text-[8px] font-bold text-slate-500 dark:text-slate-450 font-mono">
+                                <span className="flex items-center gap-1">
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 rounded-full font-semibold"></span>
+                                  Subtasks: {progress.completed}/{progress.total}
+                                </span>
+                                <span>{pct}%</span>
+                              </div>
+                              <div className="relative w-full h-1 bg-slate-150 dark:bg-slate-800/80 rounded-full overflow-hidden">
+                                <div className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
 
                     {/* Status Indicator, Last Updated, Actions Area */}
                     <div className="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 border-slate-100 dark:border-slate-800/80 pt-2.5 md:pt-0">
-                      {/* Date updated indicator */}
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
-                        <FileClock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                        <span>{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+                      {/* Date updated indicator / Assignee */}
+                      <div className="flex flex-col sm:flex-row sm:items-center items-start gap-2 text-[10px] text-slate-450 font-mono">
+                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                          <FileClock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                          <span>{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+                        </div>
+                        {ticket.assignee && (
+                          <div className="flex items-center gap-1 bg-slate-5/55 dark:bg-slate-950 border border-slate-200 dark:border-slate-805/80 px-1.5 py-0.5 rounded text-[8.5px] font-semibold text-slate-500 dark:text-slate-450 max-w-[125px] truncate" title={`Assigned to: ${ticket.assignee}`}>
+                            <div className="w-3.5 h-3.5 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center text-[7px] font-black uppercase shrink-0">
+                              {ticket.assignee.substring(0, 2)}
+                            </div>
+                            <span className="truncate leading-none">{ticket.assignee}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Status Dropdown selector */}

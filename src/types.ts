@@ -16,6 +16,8 @@ export interface Ticket {
   tags: string[];
   source: TicketSource;
   dependencies?: string[];
+  dueDate?: string;
+  assignee?: string;
   createdAt: string;
   updatedAt: string;
 }

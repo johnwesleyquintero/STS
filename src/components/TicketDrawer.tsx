@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, TicketSource } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy, User } from 'lucide-react';
 
 interface TicketDrawerProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface TicketDrawerProps {
   onSave: (ticket: Ticket) => void;
   onDelete: (id: string) => void;
   allTickets?: Ticket[];
+  currentUserEmail?: string;
 }
 
 export default function TicketDrawer({ 
@@ -18,7 +19,8 @@ export default function TicketDrawer({
   ticket, 
   onSave, 
   onDelete,
-  allTickets = []
+  allTickets = [],
+  currentUserEmail = ''
 }: TicketDrawerProps) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TicketType>('Task');
@@ -34,6 +36,8 @@ export default function TicketDrawer({
   const [copied, setCopied] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [dependencies, setDependencies] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState('');
+  const [assignee, setAssignee] = useState('');
 
   useEffect(() => {
     setShowDeleteConfirm(false);
@@ -51,6 +55,8 @@ export default function TicketDrawer({
       setTagsInput(ticket.tags.join(', '));
       setSource(ticket.source);
       setDependencies(ticket.dependencies || []);
+      setDueDate(ticket.dueDate || '');
+      setAssignee(ticket.assignee || '');
     } else {
       // Clear form for new ticket
       setTitle('');
@@ -62,6 +68,8 @@ export default function TicketDrawer({
       setTagsInput('');
       setSource('Manual');
       setDependencies([]);
+      setDueDate('');
+      setAssignee('');
     }
   }, [ticket, isOpen]);
 
@@ -133,6 +141,8 @@ export default function TicketDrawer({
       tags,
       source: ticket ? ticket.source : 'Manual',
       dependencies,
+      dueDate,
+      assignee,
       createdAt: ticket ? ticket.createdAt : now,
       updatedAt: now,
     };
@@ -370,6 +380,50 @@ export default function TicketDrawer({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Assignee and Due Date Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-550 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5" htmlFor="ticket-assignee-input">
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    Assignee
+                  </label>
+                  <div className="flex gap-1.5">
+                    <input
+                      id="ticket-assignee-input"
+                      type="text"
+                      className="flex-1 min-w-0 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Assignee name/email..."
+                      value={assignee}
+                      onChange={(e) => setAssignee(e.target.value)}
+                    />
+                    {currentUserEmail && assignee !== currentUserEmail && (
+                      <button
+                        type="button"
+                        onClick={() => setAssignee(currentUserEmail)}
+                        className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 rounded-lg text-[10px] font-bold border border-blue-100 dark:border-blue-900/40 cursor-pointer flex-shrink-0"
+                        title="Assign strictly to me"
+                      >
+                        Me
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-550 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5" htmlFor="ticket-due-date-input">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    Due Date
+                  </label>
+                  <input
+                    id="ticket-due-date-input"
+                    type="date"
+                    className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
                 </div>
               </div>
 

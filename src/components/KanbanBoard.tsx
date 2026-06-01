@@ -16,8 +16,11 @@ import {
   Copy,
   Download,
   Check,
-  Link
+  Link,
+  Calendar,
+  User
 } from 'lucide-react';
+import { getChecklistProgress, getDueDateStatus } from '../lib/utils';
 
 interface KanbanBoardProps {
   tickets: Ticket[];
@@ -57,12 +60,13 @@ export default function KanbanBoard({
   // Active Drag and Drop visual column states
   const [activeOverCol, setActiveOverCol] = useState<TicketStatus | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
 
   const handleExportToCSV = () => {
     const ticketsToExport = filteredTickets;
     if (ticketsToExport.length === 0) return;
 
-    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'CreatedAt', 'UpdatedAt'];
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Notes', 'Tags', 'Source', 'Due Date', 'Assignee', 'CreatedAt', 'UpdatedAt'];
     const csvContent = [
       headers.join(','),
       ...ticketsToExport.map(t => [
@@ -74,6 +78,8 @@ export default function KanbanBoard({
         t.notes || '',
         t.tags.join('; '),
         t.source,
+        t.dueDate || '',
+        t.assignee || '',
         t.createdAt,
         t.updatedAt,
       ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
@@ -154,12 +160,18 @@ export default function KanbanBoard({
     const matchesPriority = priorityFilter === 'All' || t.priority === priorityFilter;
     const matchesType = typeFilter === 'All' || t.type === typeFilter;
     const matchesTag = !selectedTag || t.tags.includes(selectedTag);
+    const matchesAssignee =
+      assigneeFilter === 'All' ||
+      (assigneeFilter === 'Unassigned' && !t.assignee) ||
+      t.assignee === assigneeFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag;
+    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag && matchesAssignee;
   });
 
   // Unique tags list
   const uniqueTags = Array.from(new Set(tickets.flatMap((t) => t.tags))).filter(Boolean);
+  // Unique assignees/owners list
+  const uniqueAssignees = Array.from(new Set(tickets.map((t) => t.assignee).filter(Boolean))) as string[];
 
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -268,6 +280,25 @@ export default function KanbanBoard({
                 <option value="Lead" className="bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-300 font-semibold">Lead</option>
                 <option value="Catalog" className="bg-white dark:bg-slate-900 text-fuchsia-700 dark:text-fuchsia-300 font-semibold">Catalog</option>
                 <option value="System" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">System</option>
+              </select>
+            </div>
+
+            {/* Owner assignee filter block */}
+            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Owner</span>
+              <select
+                id="kanban-assignee-select"
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 outline-hidden font-bold border-0 py-0.5 cursor-pointer max-w-[140px]"
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+              >
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Owners</option>
+                <option value="Unassigned" className="bg-white dark:bg-slate-900 text-slate-500 font-medium">Unassigned</option>
+                {uniqueAssignees.map(email => (
+                  <option key={email} value={email} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    {email}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -455,6 +486,45 @@ export default function KanbanBoard({
                           );
                         })()}
 
+                        {/* Due Date Indicator if present */}
+                        {ticket.dueDate && (() => {
+                          const statusInfo = getDueDateStatus(ticket.dueDate);
+                          if (!statusInfo) return null;
+                          const colorMap = {
+                            overdue: 'text-rose-700 bg-rose-50/80 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60',
+                            today: 'text-amber-750 bg-amber-50/80 border-amber-205 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/30',
+                            tomorrow: 'text-blue-700 bg-blue-50/80 border-blue-205 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-900/30',
+                            incoming: 'text-slate-600 bg-slate-50/80 border-slate-200 dark:bg-slate-900 dark:text-slate-450 dark:border-slate-800',
+                          };
+                          return (
+                            <div className={`mt-2 flex items-center gap-1 w-fit rounded px-2 py-0.5 text-[8.5px] font-bold border ${colorMap[statusInfo.status]}`}>
+                              <Calendar className="w-2.5 h-2.5" />
+                              <span>{statusInfo.text}</span>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Checklist progress bar */}
+                        {(() => {
+                          const progress = getChecklistProgress(ticket.notes);
+                          if (!progress) return null;
+                          const pct = Math.round((progress.completed / progress.total) * 100);
+                          return (
+                            <div className="mt-2.5 space-y-1" title={`${progress.completed}/${progress.total} checklists completed`}>
+                              <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 dark:text-slate-450 font-mono">
+                                <span className="flex items-center gap-1">
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 font-semibold text-[8px] tracking-tight"></span>
+                                  Checklist: {progress.completed}/{progress.total}
+                                </span>
+                                <span>{pct}%</span>
+                              </div>
+                              <div className="relative w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all" style={{ width: `${pct}%` }}></div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         {/* Tags list */}
                         {ticket.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2.5">
@@ -482,7 +552,17 @@ export default function KanbanBoard({
 
                         {/* Accessibility Buttons / Timestamp */}
                         <div className="mt-3.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                          <span>{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span>{new Date(ticket.updatedAt).toLocaleDateString()}</span>
+                            {ticket.assignee && (
+                              <div className="flex items-center gap-1 bg-slate-50/55 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-805/80 px-1.5 py-0.5 rounded text-[8.5px] font-semibold text-slate-500 dark:text-slate-450 max-w-[115px] truncate" title={`Assigned to: ${ticket.assignee}`}>
+                                <div className="w-3.5 h-3.5 rounded-full bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center text-[7px] font-black uppercase shrink-0">
+                                  {ticket.assignee.substring(0, 2)}
+                                </div>
+                                <span className="truncate leading-none">{ticket.assignee}</span>
+                              </div>
+                            )}
+                          </div>
 
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
