@@ -62,6 +62,9 @@ export default function KanbanBoard({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
   const [copiedMD, setCopiedMD] = useState(false);
+  const [dateRangePreset, setDateRangePreset] = useState<string>('All');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   const handleCopyAsMarkdown = () => {
     const ticketsToCopy = filteredTickets;
@@ -195,7 +198,65 @@ export default function KanbanBoard({
       (assigneeFilter === 'Unassigned' && !t.assignee) ||
       t.assignee === assigneeFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag && matchesAssignee;
+    const matchesDateRange = (() => {
+      if (dateRangePreset === 'All') return true;
+      if (!t.dueDate) return false;
+      const due = new Date(t.dueDate);
+      due.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      switch (dateRangePreset) {
+        case 'Overdue':
+          return due.getTime() < today.getTime();
+        case 'Today':
+          return due.getTime() === today.getTime();
+        case 'ThisWeek': {
+          const currentDay = today.getDay();
+          const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+          const monday = new Date(today);
+          monday.setDate(today.getDate() + distanceToMonday);
+          monday.setHours(0, 0, 0, 0);
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6);
+          sunday.setHours(23, 59, 59, 999);
+          return due.getTime() >= monday.getTime() && due.getTime() <= sunday.getTime();
+        }
+        case 'NextWeek': {
+          const currentDay = today.getDay();
+          const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
+          const nextMonday = new Date(today);
+          nextMonday.setDate(today.getDate() + distanceToMonday + 7);
+          nextMonday.setHours(0, 0, 0, 0);
+          const nextSunday = new Date(nextMonday);
+          nextSunday.setDate(nextMonday.getDate() + 6);
+          nextSunday.setHours(23, 59, 59, 999);
+          return due.getTime() >= nextMonday.getTime() && due.getTime() <= nextSunday.getTime();
+        }
+        case 'ThisMonth': {
+          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+          return due.getTime() >= firstDay.getTime() && due.getTime() <= lastDay.getTime();
+        }
+        case 'Custom': {
+          if (customStartDate) {
+            const start = new Date(customStartDate);
+            start.setHours(0, 0, 0, 0);
+            if (due.getTime() < start.getTime()) return false;
+          }
+          if (customEndDate) {
+            const end = new Date(customEndDate);
+            end.setHours(23, 59, 59, 999);
+            if (due.getTime() > end.getTime()) return false;
+          }
+          return true;
+        }
+        default:
+          return true;
+      }
+    })();
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesType && matchesTag && matchesAssignee && matchesDateRange;
   });
 
   // Unique tags list
@@ -311,9 +372,7 @@ export default function KanbanBoard({
                 <option value="Catalog" className="bg-white dark:bg-slate-900 text-fuchsia-700 dark:text-fuchsia-300 font-semibold">Catalog</option>
                 <option value="System" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">System</option>
               </select>
-            </div>
-
-            {/* Owner assignee filter block */}
+            </div>            {/* Owner assignee filter block */}
             <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Owner</span>
               <select
@@ -330,6 +389,59 @@ export default function KanbanBoard({
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Due Date Range Filter Block */}
+            <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-lg px-2.5 py-1">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Due Range</span>
+              <select
+                id="kanban-dueDateRange-select"
+                className="bg-transparent text-xs text-slate-700 dark:text-slate-300 outline-hidden font-bold border-0 py-0.5 cursor-pointer"
+                value={dateRangePreset}
+                onChange={(e) => setDateRangePreset(e.target.value)}
+              >
+                <option value="All" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">All Due Dates</option>
+                <option value="Overdue" className="bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 font-semibold">Overdue</option>
+                <option value="Today" className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-300 font-semibold">Due Today</option>
+                <option value="ThisWeek" className="bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-300 font-semibold">This Week</option>
+                <option value="NextWeek" className="bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 font-semibold">Next Week</option>
+                <option value="ThisMonth" className="bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 font-semibold">This Month</option>
+                <option value="Custom" className="bg-white dark:bg-slate-900 text-purple-700 dark:text-purple-300 font-semibold">Custom Range...</option>
+              </select>
+
+              {dateRangePreset === 'Custom' && (
+                <div className="flex items-center gap-1.5 ml-1.5 border-l border-slate-200 dark:border-slate-800 pl-2">
+                  <input
+                    type="date"
+                    className="bg-transparent text-[11px] text-slate-700 dark:text-slate-300 outline-hidden font-medium border-0 py-0 cursor-pointer w-[115px]"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    title="Start Date"
+                  />
+                  <span className="text-slate-400 text-[10px] font-semibold">to</span>
+                  <input
+                    type="date"
+                    className="bg-transparent text-[11px] text-slate-700 dark:text-slate-300 outline-hidden font-medium border-0 py-0 cursor-pointer w-[115px]"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    title="End Date"
+                  />
+                  {(customStartDate || customEndDate) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomStartDate('');
+                        setCustomEndDate('');
+                      }}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer ml-1"
+                      title="Clear Custom Range Dates"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Export CSV Button */}
