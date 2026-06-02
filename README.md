@@ -69,6 +69,7 @@ Tickets follow a rigorous operational delivery pipeline to ensure execution velo
 - **Direct Clipboard Helpers:** Copy full Ticket IDs directly to your clipboard in a single click from Kanban cards, lists, or the detailed drawer header—styled with immediate visual toast ticks for status feedback.
 - **Pragmatic CSV Portability:** Instantly export your current, active, or filtered ticket queues into a clean, standard CSV sheet with proper field escaping in both layout views.
 - **Google Sheets Two-Way Flow:** Synchronize your boards in real-time with an active spreadsheet backed by Firebase Authentication.
+- **Bi-Directional Google Calendar Sync:** Instantly sync ticket due dates directly to your primary Google Calendar from the ticket drawer. Fully supports creating, updating, and removing scheduled events in real-time, populated with rich ticket metadata, priorities, assignee status, and a direct link to open the event in Google Calendar.
 - **Intelligent Offline-First Fallback:** Seamlessly capture tickets and complete logs offline. Safe local storage structures keep data completely secure and offer manual sync triggers once connection is established.
 - **Custom Aesthetic Detailing:** Beautiful, eye-safe midnight slate visual canvas using refined typography pairing (Inter headings and JetBrains Mono status meters).
 
