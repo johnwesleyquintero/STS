@@ -6,9 +6,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-// Request Google Workspace scopes for Sheets and Drive File management
+// Request Google Workspace scopes for Sheets, Drive, and Google Calendar
 provider.addScope('https://www.googleapis.com/auth/spreadsheets');
 provider.addScope('https://www.googleapis.com/auth/drive.file');
+provider.addScope('https://www.googleapis.com/auth/calendar');
 
 // Flag to indicate if we are in the middle of a sign-in flow
 let isSigningIn = false;

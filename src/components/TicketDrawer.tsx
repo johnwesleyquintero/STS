@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, TicketSource } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy, User } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy, User, ExternalLink, RefreshCw } from 'lucide-react';
+import { getAccessToken } from '../lib/firebase';
+import { searchCalendarEvent, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, GoogleCalendarEvent } from '../lib/googleCalendar';
 
 interface TicketDrawerProps {
   isOpen: boolean;
@@ -39,6 +41,12 @@ export default function TicketDrawer({
   const [dueDate, setDueDate] = useState('');
   const [assignee, setAssignee] = useState('');
 
+  // Google Calendar integration state
+  const [calendarEvent, setCalendarEvent] = useState<GoogleCalendarEvent | null>(null);
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
   useEffect(() => {
     setShowDeleteConfirm(false);
     setActiveNotesTab(ticket ? 'preview' : 'edit');
@@ -72,6 +80,45 @@ export default function TicketDrawer({
       setAssignee('');
     }
   }, [ticket, isOpen]);
+
+  // Reactive effect to query user token and fetch matching Google Calendar Event
+  useEffect(() => {
+    let active = true;
+    const loadTokenAndCheckEvent = async () => {
+      if (!ticket || !isOpen) {
+        setCalendarEvent(null);
+        setCalendarError(null);
+        return;
+      }
+
+      setCalendarError(null);
+      setIsCalendarLoading(true);
+      try {
+        const t = await getAccessToken();
+        if (!active) return;
+        setToken(t);
+        
+        if (t && ticket.id && ticket.dueDate) {
+          const ev = await searchCalendarEvent(t, ticket.id);
+          if (active) {
+            setCalendarEvent(ev);
+          }
+        } else {
+          setCalendarEvent(null);
+        }
+      } catch (err: any) {
+        console.error('Error fetching calendar status:', err);
+        if (active) setCalendarError('Failed to verify calendar status');
+      } finally {
+        if (active) setIsCalendarLoading(false);
+      }
+    };
+
+    loadTokenAndCheckEvent();
+    return () => {
+      active = false;
+    };
+  }, [ticket, isOpen, dueDate]);
 
   const handleToggleCheckbox = (lineIdx: number) => {
     const splitLines = notes.split('\n');
@@ -121,6 +168,68 @@ export default function TicketDrawer({
 
   const handleRemoveTag = (index: number) => {
     setTags(tags.filter((_, i) => i !== index));
+  };
+
+  const handleSyncToCalendar = async () => {
+    if (!token || !ticket || !dueDate) return;
+
+    // MANDATORY confirmation dialog before writing/updating data
+    const action = calendarEvent ? 'Update the scheduled Google Calendar event' : 'Create a Google Calendar event';
+    const isConfirmed = window.confirm(`Are you sure you want to ${action.toLowerCase()} for this ticket on ${dueDate}?`);
+    if (!isConfirmed) return;
+
+    setIsCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      const tempTicket: Ticket = {
+        id: ticket.id,
+        title: title.trim(),
+        type,
+        priority,
+        status,
+        notes,
+        tags,
+        source: ticket.source,
+        dependencies,
+        dueDate,
+        assignee,
+        createdAt: ticket.createdAt,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (calendarEvent) {
+        const updated = await updateCalendarEvent(token, calendarEvent.id, tempTicket);
+        setCalendarEvent(updated);
+      } else {
+        const created = await createCalendarEvent(token, tempTicket);
+        setCalendarEvent(created);
+      }
+    } catch (err: any) {
+      console.error('Error syncing calendar event:', err);
+      setCalendarError('Failed to synchronize with Google Calendar');
+    } finally {
+      setIsCalendarLoading(false);
+    }
+  };
+
+  const handleRemoveFromCalendar = async () => {
+    if (!token || !calendarEvent) return;
+
+    // MANDATORY confirmation dialog before deleting data
+    const isConfirmed = window.confirm('Are you sure you want to remove this ticket event from your Google Calendar?');
+    if (!isConfirmed) return;
+
+    setIsCalendarLoading(true);
+    setCalendarError(null);
+    try {
+      await deleteCalendarEvent(token, calendarEvent.id);
+      setCalendarEvent(null);
+    } catch (err: any) {
+      console.error('Error deleting calendar event:', err);
+      setCalendarError('Failed to delete Google Calendar event');
+    } finally {
+      setIsCalendarLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -426,6 +535,103 @@ export default function TicketDrawer({
                   />
                 </div>
               </div>
+
+              {/* Google Calendar Sync Card */}
+              {ticket && (
+                <div className="space-y-2 border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-lg" id="gcal-sync-card">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono">
+                      <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                      Google Calendar Sync
+                    </span>
+                    {isCalendarLoading && (
+                      <RefreshCw className="w-3 h-3 text-slate-400 animate-spin" />
+                    )}
+                  </div>
+
+                  {!token ? (
+                    <p className="text-[11px] text-slate-500 leading-normal">
+                      Connect database online with Google to map and synchronize this ticket's due date directly to Google Calendar.
+                    </p>
+                  ) : !dueDate ? (
+                    <p className="text-[11px] text-slate-400 italic">
+                      Select a Due Date above to schedule this ticket on Google Calendar.
+                    </p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2.5 bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-250 dark:border-slate-800 text-xs">
+                        <div className="min-w-0 flex-1">
+                          {calendarEvent ? (
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                                Scheduled Live
+                              </span>
+                              <p className="truncate font-semibold text-slate-700 dark:text-slate-300">
+                                {calendarEvent.summary}
+                              </p>
+                              <div className="flex items-center gap-1 text-[10px] text-slate-450 dark:text-slate-500">
+                                <span>Due: {calendarEvent.start?.date}</span>
+                                {calendarEvent.htmlLink && (
+                                  <a
+                                    href={calendarEvent.htmlLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline flex items-center gap-0.5 inline-flex ml-1.5 font-bold"
+                                  >
+                                    View on GCal <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-0.5">
+                              <span className="text-[10px] uppercase font-bold text-slate-450 dark:text-slate-500 tracking-wider">
+                                Not Scheduled
+                              </span>
+                              <p className="text-slate-500 dark:text-slate-455 leading-normal text-[11px]">
+                                This ticket detail is not registered on your Google Calendar.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5">
+                          {calendarEvent && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveFromCalendar}
+                              disabled={isCalendarLoading}
+                              className="p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded cursor-pointer disabled:opacity-50 transition-colors"
+                              title="Remove event from Google Calendar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleSyncToCalendar}
+                            disabled={isCalendarLoading}
+                            className={`px-2.5 py-1 text-[11px] font-bold rounded cursor-pointer select-none transition-all duration-150 flex items-center gap-1 ${
+                              calendarEvent
+                                ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-250 dark:bg-amber-950/20 dark:border-amber-900/60 dark:text-amber-300'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-3xs'
+                            }`}
+                          >
+                            {calendarEvent ? 'Update Event' : 'Add to GCal'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {calendarError && (
+                        <p className="text-[10px] text-rose-650 dark:text-rose-450 font-medium">
+                          {calendarError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Notebooks/Markdown Notes section */}
               <div className="space-y-1.5 flex-1 flex flex-col relative">
