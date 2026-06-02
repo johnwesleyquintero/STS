@@ -61,6 +61,36 @@ export default function KanbanBoard({
   const [activeOverCol, setActiveOverCol] = useState<TicketStatus | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
+  const [copiedMD, setCopiedMD] = useState(false);
+
+  const handleCopyAsMarkdown = () => {
+    const ticketsToCopy = filteredTickets;
+    if (ticketsToCopy.length === 0) return;
+
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Due Date', 'Assignee'];
+    const delimiter = ['---', '---', '---', '---', '---', '---', '---'];
+    
+    const rows = ticketsToCopy.map(t => [
+      t.id,
+      t.title.replace(/\|/g, '\\|'),
+      t.type,
+      t.priority,
+      t.status,
+      t.dueDate || 'N/A',
+      t.assignee || 'Unassigned'
+    ]);
+
+    const markdownTable = [
+      `| ${headers.join(' | ')} |`,
+      `| ${delimiter.join(' | ')} |`,
+      ...rows.map(row => `| ${row.join(' | ')} |`)
+    ].join('\n');
+
+    navigator.clipboard.writeText(markdownTable).then(() => {
+      setCopiedMD(true);
+      setTimeout(() => setCopiedMD(false), 2000);
+    });
+  };
 
   const handleExportToCSV = () => {
     const ticketsToExport = filteredTickets;
@@ -311,6 +341,30 @@ export default function KanbanBoard({
             >
               <Download className="w-3.5 h-3.5 text-slate-400" />
               <span>Export CSV</span>
+            </button>
+
+            {/* Copy MD Button */}
+            <button
+              id="kanban-copy-md-btn"
+              onClick={handleCopyAsMarkdown}
+              className={`flex items-center gap-1.5 border rounded-lg px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer shadow-3xs ${
+                copiedMD 
+                  ? 'bg-emerald-50 border-emerald-250 text-emerald-700 dark:bg-emerald-950/40 dark:border-emerald-850 dark:text-emerald-300' 
+                  : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+              }`}
+              title="Copy visible Kanban tickets as a Markdown table"
+            >
+              {copiedMD ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Copy MD</span>
+                </>
+              )}
             </button>
           </div>
         </div>
