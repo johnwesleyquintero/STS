@@ -47,6 +47,9 @@ export async function searchCalendarEvent(accessToken: string, ticketId: string)
     });
 
     if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('INSUFFICIENT_SCOPES');
+      }
       console.error('Failed to search calendar events:', await response.text());
       return null;
     }
@@ -109,6 +112,9 @@ Created via ScaleSmart Ticketing System (STS).`,
   });
 
   if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error('INSUFFICIENT_SCOPES');
+    }
     const errorMsg = await response.text();
     throw new Error(`Failed to create calendar event: ${errorMsg}`);
   }
@@ -158,6 +164,9 @@ Created via ScaleSmart Ticketing System (STS).`,
   });
 
   if (!response.ok) {
+    if (response.status === 403) {
+      throw new Error('INSUFFICIENT_SCOPES');
+    }
     const errorMsg = await response.text();
     throw new Error(`Failed to update calendar event: ${errorMsg}`);
   }
@@ -177,6 +186,9 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
   });
 
   if (!response.ok && response.status !== 404) {
+    if (response.status === 403) {
+      throw new Error('INSUFFICIENT_SCOPES');
+    }
     const errorMsg = await response.text();
     throw new Error(`Failed to delete calendar event: ${errorMsg}`);
   }

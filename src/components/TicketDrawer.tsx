@@ -108,7 +108,13 @@ export default function TicketDrawer({
         }
       } catch (err: any) {
         console.error('Error fetching calendar status:', err);
-        if (active) setCalendarError('Failed to verify calendar status');
+        if (active) {
+          if (err.message === 'INSUFFICIENT_SCOPES') {
+            setCalendarError('Insufficient permissions. Please sign out and sign in with Google again to authorize Google Calendar permissions.');
+          } else {
+            setCalendarError('Failed to verify calendar status');
+          }
+        }
       } finally {
         if (active) setIsCalendarLoading(false);
       }
@@ -206,7 +212,11 @@ export default function TicketDrawer({
       }
     } catch (err: any) {
       console.error('Error syncing calendar event:', err);
-      setCalendarError('Failed to synchronize with Google Calendar');
+      if (err.message === 'INSUFFICIENT_SCOPES') {
+        setCalendarError('Insufficient permissions. Please sign out and sign in with Google again to authorize Google Calendar permissions.');
+      } else {
+        setCalendarError('Failed to synchronize with Google Calendar');
+      }
     } finally {
       setIsCalendarLoading(false);
     }
@@ -226,7 +236,11 @@ export default function TicketDrawer({
       setCalendarEvent(null);
     } catch (err: any) {
       console.error('Error deleting calendar event:', err);
-      setCalendarError('Failed to delete Google Calendar event');
+      if (err.message === 'INSUFFICIENT_SCOPES') {
+        setCalendarError('Insufficient permissions. Please sign out and sign in with Google again to authorize Google Calendar permissions.');
+      } else {
+        setCalendarError('Failed to delete Google Calendar event');
+      }
     } finally {
       setIsCalendarLoading(false);
     }
