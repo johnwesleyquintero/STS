@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, ActivityLog } from './types';
 import { initAuth, googleSignIn, logout, getAccessToken } from './lib/firebase';
+import { sendGmailNotification } from './lib/gmail';
 import {
   searchSpreadsheet,
   createSpreadsheet,
@@ -33,6 +34,7 @@ import {
   Sun,
   Moon,
   Keyboard,
+  Mail,
 } from 'lucide-react';
 
 const ScaleSmartLogo = ({ size = 24, className = "" }: { size?: number; className?: string }) => {
@@ -144,6 +146,14 @@ export default function App() {
   const [showLogsPanel, setShowLogsPanel] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
 
+  // Gmail states
+  const [showGmailModal, setShowGmailModal] = useState(false);
+  const [gmailRecipient, setGmailRecipient] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [lastEmailSentTime, setLastEmailSentTime] = useState<string | null>(() => {
+    return localStorage.getItem('sts_last_email_sent_time');
+  });
+
   // Lifted filtering, search, and sorting states for global synchronization
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -177,6 +187,37 @@ export default function App() {
       localStorage.setItem('sts_theme', 'light');
     }
   }, [isDarkMode]);
+
+  // Calculate urgent tickets (due today, overdue, or due in 1-2 days, active states)
+  const urgentTickets = tickets.filter((t) => {
+    if (t.status === 'Done') return false;
+    if (!t.dueDate) return false;
+    
+    const due = new Date(t.dueDate);
+    due.setHours(0, 0, 0, 0);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // overdue or due within 2 days
+    return diffDays <= 2;
+  });
+
+  const sortedUrgentTickets = [...urgentTickets].sort((a, b) => {
+    // 1. Due date ascending (soonest/most overdue first)
+    if (a.dueDate && b.dueDate) {
+      const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      if (diff !== 0) return diff;
+    }
+    // 2. Priority descending (P0 > P1 > P2 > P3)
+    const priorityWeights: Record<TicketPriority, number> = { P0: 4, P1: 3, P2: 2, P3: 1 };
+    const weightA = priorityWeights[a.priority] || 0;
+    const weightB = priorityWeights[b.priority] || 0;
+    return weightB - weightA;
+  });
 
   const addToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     const id = Math.random().toString(36).slice(2);
@@ -221,6 +262,13 @@ export default function App() {
       window.removeEventListener('sts_token_refreshed', handleTokenRefreshed);
     };
   }, []);
+
+  // Synchronize gmailRecipient with user's email once authenticated
+  useEffect(() => {
+    if (user?.email && !gmailRecipient) {
+      setGmailRecipient(user.email);
+    }
+  }, [user, gmailRecipient]);
 
   // 2. Load tickets when session mode is active
   useEffect(() => {
@@ -502,6 +550,68 @@ export default function App() {
       }
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // Gmail email sending handler
+  const handleSendGmailNotification = async () => {
+    if (!gmailRecipient.trim()) {
+      addToast('Please provide a valid recipient email.', 'error');
+      return;
+    }
+    if (sortedUrgentTickets.length === 0) {
+      addToast('No urgent tickets to send summary for!', 'info');
+      return;
+    }
+    if (!accessToken) {
+      addToast('Google Access Token missing. Please log in again.', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Confirm Send: Do you want to send the due task summary email of ${sortedUrgentTickets.length} tasks to ${gmailRecipient.trim()}?`
+    );
+    if (!confirmed) return;
+
+    setIsSendingEmail(true);
+    try {
+      const success = await sendGmailNotification(
+        accessToken,
+        gmailRecipient.trim(),
+        sortedUrgentTickets,
+        user?.displayName || 'Operator'
+      );
+
+      if (success) {
+        const timeNow = new Date().toISOString();
+        localStorage.setItem('sts_last_email_sent_time', timeNow);
+        setLastEmailSentTime(timeNow);
+        
+        // Log activity locally and in sheets
+        const logItem: ActivityLog = {
+          timestamp: timeNow,
+          ticketId: 'SYSTEM',
+          action: 'EMAIL_SENT',
+          details: `Sent due task summary of ${sortedUrgentTickets.length} items to ${gmailRecipient.trim()}`
+        };
+        
+        setActivityLogs((prev) => [logItem, ...prev]);
+        addToast(`Email alert sent successfully to ${gmailRecipient}!`, 'success');
+        setShowGmailModal(false);
+        
+        if (sessionMode === 'online' && accessToken && spreadsheetId) {
+          logSpreadsheetActivity(accessToken, spreadsheetId, logItem).catch((err: any) => {
+            console.error('Error logging email to spreadsheet:', err);
+          });
+        }
+      } else {
+        addToast('Failed to send email summary. Check console error logs.', 'error');
+      }
+    } catch (err: any) {
+      console.error('Error sending Google mail:', err);
+      addToast(`Error: ${err?.message || 'Failed to send email summary.'}`, 'error');
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -1061,6 +1171,27 @@ export default function App() {
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-blue-500' : ''}`} />
           </button>
 
+          {/* Gmail Alerts button */}
+          <button
+            id="header-gmail-alerts-btn"
+            onClick={() => {
+              if (sessionMode !== 'online') {
+                addToast('Gmail Alerts are only available in Cloud Live mode.', 'info');
+              } else {
+                setShowGmailModal(true);
+              }
+            }}
+            title={sessionMode === 'online' ? `Gmail Alerts: ${sortedUrgentTickets.length} tasks due soon` : "Switch to Cloud Live mode for Gmail notifications"}
+            className="p-2 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-700 dark:text-slate-300 flex items-center justify-center transition-all cursor-pointer shadow-3xs hover:shadow-2xs select-none h-9 w-9 relative"
+          >
+            <Mail className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            {sortedUrgentTickets.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border border-white dark:border-slate-900 animate-pulse">
+                {sortedUrgentTickets.length}
+              </span>
+            )}
+          </button>
+
           {/* Activity Logs history drawer button */}
           <button
             id="header-activity-logs-btn"
@@ -1347,6 +1478,145 @@ export default function App() {
 
       {/* Keyboard shortcuts overlay modal dialog */}
       <AnimatePresence>
+        {showGmailModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              id="gmail-dialog-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowGmailModal(false)}
+              className="fixed inset-0 bg-black/60 z-50 animate-fade"
+            />
+            {/* Modal Dialog container */}
+            <motion.div
+              id="gmail-dialog"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl shadow-2xl p-6 z-55 overflow-hidden font-sans flex flex-col max-h-[80vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-150 dark:border-slate-850 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-pulse" />
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 font-display">Gmail Task Due Summarizer</h3>
+                    <p className="text-[11px] text-slate-400">Generate and send HTML email notifications for soon-due and overdue tasks</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowGmailModal(false)}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-slate-400" />
+                </button>
+              </div>
+
+              {/* Scrollable list of due-soon tasks */}
+              <div className="flex-1 overflow-y-auto mt-4 pr-1 space-y-3">
+                <div className="text-xs font-semibold text-slate-605">
+                  {sortedUrgentTickets.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50">
+                      ✨ Great work! No tasks are overdue or due within the next 2 days.
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-2 text-slate-500 flex items-center justify-between">
+                        <span>Urgent Tasks ({sortedUrgentTickets.length})</span>
+                        {lastEmailSentTime && (
+                          <span className="text-[10px] font-mono font-normal">Last Sent: {new Date(lastEmailSentTime).toLocaleTimeString()}</span>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        {sortedUrgentTickets.map((t) => {
+                          const isOverdue = new Date(t.dueDate || '').getTime() < new Date().setHours(0,0,0,0);
+                          return (
+                            <div 
+                              key={t.id} 
+                              className={`p-3 rounded-lg border text-xs flex items-center justify-between gap-3 ${
+                                isOverdue 
+                                  ? 'bg-rose-50/50 border-rose-250 text-rose-900 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-200' 
+                                  : 'bg-slate-50/75 border-slate-200 dark:bg-slate-900 dark:border-slate-805 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              <div className="min-w-0 pr-1">
+                                <span className="font-mono font-bold text-slate-500 mr-1.5">[{t.id}]</span>
+                                <span className="font-bold truncate">{t.title}</span>
+                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-450 dark:text-slate-500 font-medium">
+                                  <span className={`px-1.5 py-0.5 rounded-sm font-bold uppercase text-[9px] ${
+                                    t.priority === 'P0' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300' :
+                                    t.priority === 'P1' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300' :
+                                    'bg-slate-100 text-slate-705 dark:bg-slate-800 dark:text-slate-405'
+                                  }`}>{t.priority}</span>
+                                  <span>•</span>
+                                  <span>{t.type}</span>
+                                  {t.assignee && (
+                                    <>
+                                      <span>•</span>
+                                      <span>Assignee: {t.assignee}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <span className={`font-mono text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
+                                  isOverdue ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-450' : 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300'
+                                }`}>
+                                  Due: {t.dueDate}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recipient Form block */}
+              {sortedUrgentTickets.length > 0 && (
+                <div className="border-t border-slate-150 dark:border-slate-850 pt-4 mt-4 shrink-0 font-sans">
+                  <label htmlFor="gmail-recipient-input" className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    Send Notification Summary To
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="gmail-recipient-input"
+                      type="email"
+                      value={gmailRecipient}
+                      onChange={(e) => setGmailRecipient(e.target.value)}
+                      placeholder="e.g. manager@company.com"
+                      className="flex-1 h-9 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-sans text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                    />
+                    <button
+                      id="gmail-send-btn"
+                      onClick={handleSendGmailNotification}
+                      disabled={isSendingEmail || !gmailRecipient.trim()}
+                      className="px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed select-none h-9 shrink-0 shadow-3xs"
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-3.5 h-3.5" />
+                          Send Alert
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
+
         {showShortcutsDialog && (
           <>
             {/* Backdrop */}
