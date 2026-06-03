@@ -6,10 +6,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-// Request Google Workspace scopes for Sheets, Drive, and Google Calendar
+// Request Google Workspace scopes for Sheets, Drive, Google Calendar, and Gmail
 provider.addScope('https://www.googleapis.com/auth/spreadsheets');
 provider.addScope('https://www.googleapis.com/auth/drive.file');
 provider.addScope('https://www.googleapis.com/auth/calendar');
+provider.addScope('https://www.googleapis.com/auth/gmail.send');
 
 // Force Google to give us a refreshtoken by setting offline access and consent prompt
 provider.setCustomParameters({
