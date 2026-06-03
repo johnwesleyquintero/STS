@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Ticket, TicketType, TicketPriority, TicketStatus, TicketSource } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Calendar, Tag, FileText, CheckCircle, Clock, HelpCircle, Link, Check, Copy, User, ExternalLink, RefreshCw } from 'lucide-react';
@@ -13,6 +13,7 @@ interface TicketDrawerProps {
   onDelete: (id: string) => void;
   allTickets?: Ticket[];
   currentUserEmail?: string;
+  onAutoSave?: (ticket: Ticket) => Ticket; // Auto-save handler
 }
 
 export default function TicketDrawer({ 
@@ -22,7 +23,8 @@ export default function TicketDrawer({
   onSave, 
   onDelete,
   allTickets = [],
-  currentUserEmail = ''
+  currentUserEmail = '',
+  onAutoSave
 }: TicketDrawerProps) {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TicketType>('Task');
@@ -41,6 +43,10 @@ export default function TicketDrawer({
   const [dueDate, setDueDate] = useState('');
   const [assignee, setAssignee] = useState('');
 
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const loadedTicketIdRef = useRef<string | undefined>(undefined);
+  const wasOpenRef = useRef<boolean>(false);
+
   // Google Calendar integration state
   const [calendarEvent, setCalendarEvent] = useState<GoogleCalendarEvent | null>(null);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -48,38 +54,127 @@ export default function TicketDrawer({
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    setShowDeleteConfirm(false);
-    setActiveNotesTab(ticket ? 'preview' : 'edit');
-    setShowMarkdownHelp(false);
-    setCopied(false);
-    setCopiedId(false);
-    if (ticket) {
-      setTitle(ticket.title);
-      setType(ticket.type);
-      setPriority(ticket.priority);
-      setStatus(ticket.status);
-      setNotes(ticket.notes);
-      setTags(ticket.tags);
-      setTagsInput(ticket.tags.join(', '));
-      setSource(ticket.source);
-      setDependencies(ticket.dependencies || []);
-      setDueDate(ticket.dueDate || '');
-      setAssignee(ticket.assignee || '');
+    const ticketId = ticket?.id;
+    const hasDrawerJustOpened = isOpen && !wasOpenRef.current;
+    const hasTicketChanged = ticketId !== loadedTicketIdRef.current;
+
+    if (hasDrawerJustOpened || (isOpen && hasTicketChanged)) {
+      setShowDeleteConfirm(false);
+      setActiveNotesTab(ticket ? 'preview' : 'edit');
+      setShowMarkdownHelp(false);
+      setCopied(false);
+      setCopiedId(false);
+      setAutoSaveStatus('idle');
+      if (ticket) {
+        setTitle(ticket.title);
+        setType(ticket.type);
+        setPriority(ticket.priority);
+        setStatus(ticket.status);
+        setNotes(ticket.notes);
+        setTags(ticket.tags);
+        setTagsInput(ticket.tags.join(', '));
+        setSource(ticket.source);
+        setDependencies(ticket.dependencies || []);
+        setDueDate(ticket.dueDate || '');
+        setAssignee(ticket.assignee || '');
+      } else {
+        // Clear form for new ticket
+        setTitle('');
+        setType('Task');
+        setPriority('P2');
+        setStatus('Open');
+        setNotes('');
+        setTags([]);
+        setTagsInput('');
+        setSource('Manual');
+        setDependencies([]);
+        setDueDate('');
+        setAssignee('');
+      }
+      loadedTicketIdRef.current = ticketId;
+    }
+    
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      loadedTicketIdRef.current = undefined;
+      setAutoSaveStatus('idle');
     } else {
-      // Clear form for new ticket
-      setTitle('');
-      setType('Task');
-      setPriority('P2');
-      setStatus('Open');
-      setNotes('');
-      setTags([]);
-      setTagsInput('');
-      setSource('Manual');
-      setDependencies([]);
-      setDueDate('');
-      setAssignee('');
+      wasOpenRef.current = true;
     }
   }, [ticket, isOpen]);
+
+  // Auto-save effect with 1.5s debounce inactivity
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!onAutoSave) return;
+    if (!title.trim()) return;
+
+    // Build standard structure matching current form inputs
+    const currentTicketData: Ticket = {
+      id: ticket ? ticket.id : '',
+      title: title.trim(),
+      type,
+      priority,
+      status,
+      notes,
+      tags,
+      source: ticket ? ticket.source : (currentUserEmail ? 'Sync' : 'Manual'),
+      dependencies,
+      dueDate,
+      assignee,
+      createdAt: ticket ? ticket.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Evaluate whether anything has changed before queuing auto-save
+    const hasChanges = !ticket || 
+      ticket.title !== currentTicketData.title ||
+      ticket.type !== currentTicketData.type ||
+      ticket.priority !== currentTicketData.priority ||
+      ticket.status !== currentTicketData.status ||
+      ticket.notes !== currentTicketData.notes ||
+      JSON.stringify(ticket.tags) !== JSON.stringify(currentTicketData.tags) ||
+      JSON.stringify(ticket.dependencies || []) !== JSON.stringify(currentTicketData.dependencies || []) ||
+      (ticket.dueDate || '') !== (currentTicketData.dueDate || '') ||
+      (ticket.assignee || '') !== (currentTicketData.assignee || '');
+
+    if (!hasChanges) {
+      return;
+    }
+
+    setAutoSaveStatus('saving');
+
+    const timer = setTimeout(() => {
+      try {
+        const saved = onAutoSave(currentTicketData);
+        if (saved && saved.id) {
+          loadedTicketIdRef.current = saved.id;
+        }
+        setAutoSaveStatus('saved');
+      } catch (err) {
+        console.error('Auto-save error:', err);
+        setAutoSaveStatus('idle');
+      }
+    }, 1500); // 1.5 seconds debounce inactivity
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [
+    isOpen,
+    title,
+    type,
+    priority,
+    status,
+    notes,
+    tags,
+    dependencies,
+    dueDate,
+    assignee,
+    ticket,
+    onAutoSave,
+    currentUserEmail
+  ]);
 
   // Reactive effect to query user token and fetch matching Google Calendar Event
   useEffect(() => {
@@ -334,9 +429,23 @@ export default function TicketDrawer({
                     'New Queue Ticket'
                   )}
                 </span>
-                <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1 font-display">
-                  {ticket ? 'Edit Ticket Details' : 'Create Operational Ticket'}
-                </h2>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 mt-1 font-display">
+                    {ticket ? 'Edit Ticket Details' : 'Create Operational Ticket'}
+                  </h2>
+                  {autoSaveStatus === 'saving' && (
+                    <span className="text-[10px] bg-amber-50 dark:bg-amber-955/40 text-amber-600 dark:text-amber-400 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono transition-all animate-pulse mt-1 select-none">
+                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce"></span>
+                      Saving...
+                    </span>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <span className="text-[10px] bg-emerald-50 dark:bg-emerald-955/40 text-emerald-600 dark:text-emerald-400 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 font-mono transition-all mt-1 select-none">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                      Saved
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {ticket && (
@@ -932,23 +1041,39 @@ export default function TicketDrawer({
               )}
 
               {/* Drawer actions footer */}
-              <div className="pt-4 border-t border-slate-150 dark:border-slate-800/80 flex items-center justify-end gap-3 bg-slate-50 dark:bg-slate-950 p-4 -mx-6 -mb-6 rounded-b-xl sticky bottom-0 z-10">
-                <button
-                  id="drawer-cancel-btn"
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  id="drawer-save-btn"
-                  type="submit"
-                  disabled={!title.trim()}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
-                >
-                  {ticket ? 'Save Changes' : 'Create Ticket'}
-                </button>
+              <div className="pt-4 border-t border-slate-150 dark:border-slate-800/80 flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-4 -mx-6 -mb-6 rounded-b-xl sticky bottom-0 z-10 w-[calc(100%+3rem)]">
+                <div className="flex items-center pl-2">
+                  {autoSaveStatus === 'saving' && (
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-mono flex items-center gap-1.5">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Auto-saving...
+                    </span>
+                  )}
+                  {autoSaveStatus === 'saved' && (
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5" />
+                      Saved automatically
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    id="drawer-cancel-btn"
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    id="drawer-save-btn"
+                    type="submit"
+                    disabled={!title.trim()}
+                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                  >
+                    {ticket ? 'Save Changes' : 'Create Ticket'}
+                  </button>
+                </div>
               </div>
             </form>
           </motion.div>

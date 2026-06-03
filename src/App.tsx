@@ -774,6 +774,34 @@ export default function App() {
     setSelectedTicket(null);
   };
 
+  // Auto-Save Ticket (Keep drawer open, update local state or GSheets in background)
+  const handleAutoSaveTicket = (updatedTicket: Ticket): Ticket => {
+    let id = updatedTicket.id;
+    let isNew = false;
+
+    if (!id) {
+      id = generateNextId(tickets);
+      updatedTicket.id = id;
+      isNew = true;
+    }
+
+    const updatedTickets = isNew
+      ? [updatedTicket, ...tickets]
+      : tickets.map((t) => (t.id === id ? updatedTicket : t));
+
+    if (sessionMode === 'offline') {
+      saveOfflineTicketsAndLogs(updatedTickets);
+      addActivityLog(id, isNew ? 'CREATE' : 'UPDATE', `[Auto-save] ${isNew ? 'Created' : 'Updated'} details for "${updatedTicket.title}"`);
+    } else {
+      setTickets(updatedTickets);
+      addActivityLog(id, isNew ? 'CREATE' : 'UPDATE', `[Auto-save] ${isNew ? 'Created' : 'Updated'} details for "${updatedTicket.title}"`);
+      pushToGSheet(updatedTickets);
+    }
+
+    setSelectedTicket(updatedTicket);
+    return updatedTicket;
+  };
+
   // Quick Inline Status Update
   const handleUpdateTicketStatus = (id: string, newStatus: TicketStatus) => {
     const target = tickets.find((t) => t.id === id);
@@ -1433,6 +1461,7 @@ export default function App() {
         onDelete={handleDeleteTicket}
         allTickets={tickets}
         currentUserEmail={user?.email || user?.displayName || ''}
+        onAutoSave={handleAutoSaveTicket}
       />
       {/* Side slide activity logs list drawer */}
       <div id="logs-slide-viewport" className={`fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-y-auto flex flex-col transition-transform transform ${
