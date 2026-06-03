@@ -349,6 +349,16 @@ export default function App() {
     setLastSynced(new Date().toLocaleTimeString());
   };
 
+  // Helper to handle expired or unauthorized Google API Access Tokens
+  const handleAuthExpired = () => {
+    setAccessToken(null);
+    setIsAuthenticated(false);
+    setUser(null);
+    setSessionMode(null);
+    localStorage.removeItem('sts_session_mode');
+    addToast('Your session has expired. Please sign in with Google again to refresh your connection.', 'error');
+  };
+
   // 3. Search Drive for the sheet
   const detectAndLoadGSheetsDatabase = async (overrideId?: string) => {
     if (!accessToken) return;
@@ -371,7 +381,11 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      addToast('Error searching or accessing Google Drive.', 'error');
+      if (err.message === 'UNAUTHENTICATED') {
+        handleAuthExpired();
+      } else {
+        addToast('Error searching or accessing Google Drive.', 'error');
+      }
     } finally {
       setIsSearchingDrive(false);
     }
@@ -396,7 +410,11 @@ export default function App() {
       }
     } catch (err: any) {
       console.error(err);
-      addToast('Error synchronized from Google Sheet.', 'error');
+      if (err.message === 'UNAUTHENTICATED') {
+        handleAuthExpired();
+      } else {
+        addToast('Error synchronized from Google Sheet.', 'error');
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -410,7 +428,11 @@ export default function App() {
       setLastSynced(new Date().toLocaleTimeString());
     } catch (err: any) {
       console.error(err);
-      addToast('Could not auto-save to cloud spreadsheet.', 'error');
+      if (err.message === 'UNAUTHENTICATED') {
+        handleAuthExpired();
+      } else {
+        addToast('Could not auto-save to cloud spreadsheet.', 'error');
+      }
     }
   };
 
@@ -430,7 +452,11 @@ export default function App() {
       setLastSynced(new Date().toLocaleTimeString());
     } catch (err: any) {
       console.error(err);
-      addToast('Error creating STS database sheet.', 'error');
+      if (err.message === 'UNAUTHENTICATED') {
+        handleAuthExpired();
+      } else {
+        addToast('Error creating STS database sheet.', 'error');
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -457,7 +483,11 @@ export default function App() {
       await syncFromGSheet(targetId);
     } catch (err: any) {
       console.error(err);
-      addToast('Failed to link custom spreadsheet ID. Check sharing settings/permissions.', 'error');
+      if (err.message === 'UNAUTHENTICATED') {
+        handleAuthExpired();
+      } else {
+        addToast('Failed to link custom spreadsheet ID. Check sharing settings/permissions.', 'error');
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -546,7 +576,11 @@ export default function App() {
       const currentLogs = storedLogs ? JSON.parse(storedLogs) : [];
       localStorage.setItem('sts_offline_logs', JSON.stringify([logItem, ...currentLogs]));
     } else if (sessionMode === 'online' && accessToken && spreadsheetId) {
-      logSpreadsheetActivity(accessToken, spreadsheetId, logItem);
+      logSpreadsheetActivity(accessToken, spreadsheetId, logItem).catch((err: any) => {
+        if (err.message === 'UNAUTHENTICATED') {
+          handleAuthExpired();
+        }
+      });
     }
 
     return logItem;

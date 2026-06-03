@@ -13,6 +13,9 @@ export async function searchSpreadsheet(accessToken: string): Promise<string | n
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('UNAUTHENTICATED');
+      }
       const err = await response.json();
       console.error('Error searching spreadsheet:', err);
       return null;
@@ -69,6 +72,9 @@ export async function createSpreadsheet(accessToken: string): Promise<string> {
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHENTICATED');
+    }
     const err = await response.json();
     throw new Error(err.error?.message || 'Failed to create spreadsheet');
   }
@@ -105,7 +111,7 @@ async function writeHeaders(accessToken: string, spreadsheetId: string): Promise
   const logHeaders = ['Timestamp', 'Ticket ID', 'Action', 'Details'];
 
   // Write Tickets headers
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A1:M1?valueInputOption=USER_ENTERED`, {
+  const tHeaderResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A1:M1?valueInputOption=USER_ENTERED`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -118,8 +124,12 @@ async function writeHeaders(accessToken: string, spreadsheetId: string): Promise
     }),
   });
 
+  if (!tHeaderResp.ok && tHeaderResp.status === 401) {
+    throw new Error('UNAUTHENTICATED');
+  }
+
   // Write Log headers
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Activity Log!A1:D1?valueInputOption=USER_ENTERED`, {
+  const lHeaderResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Activity Log!A1:D1?valueInputOption=USER_ENTERED`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -131,6 +141,10 @@ async function writeHeaders(accessToken: string, spreadsheetId: string): Promise
       values: [logHeaders],
     }),
   });
+
+  if (!lHeaderResp.ok && lHeaderResp.status === 401) {
+    throw new Error('UNAUTHENTICATED');
+  }
 }
 
 /**
@@ -144,6 +158,9 @@ export async function fetchSpreadsheetTickets(accessToken: string, spreadsheetId
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHENTICATED');
+    }
     throw new Error('Failed to fetch tickets from spreadsheet');
   }
 
@@ -175,12 +192,19 @@ export async function fetchSpreadsheetTickets(accessToken: string, spreadsheetId
  */
 export async function syncSpreadsheetTickets(accessToken: string, spreadsheetId: string, tickets: Ticket[]): Promise<void> {
   // 1. Clear current values
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:M1000:clear`, {
+  const clearResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Tickets!A2:M1000:clear`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
+
+  if (!clearResponse.ok) {
+    if (clearResponse.status === 401) {
+      throw new Error('UNAUTHENTICATED');
+    }
+    throw new Error('Failed to clear spreadsheet tickets');
+  }
 
   if (tickets.length === 0) {
     return;
@@ -218,6 +242,9 @@ export async function syncSpreadsheetTickets(accessToken: string, spreadsheetId:
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('UNAUTHENTICATED');
+    }
     throw new Error('Failed to update spreadsheet tickets');
   }
 }
@@ -243,6 +270,9 @@ export async function logSpreadsheetActivity(accessToken: string, spreadsheetId:
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('UNAUTHENTICATED');
+      }
       console.error('Failed to append activity log:', await response.text());
     }
   } catch (error) {
