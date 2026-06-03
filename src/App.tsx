@@ -208,6 +208,18 @@ export default function App() {
         }
       }
     );
+
+    const handleTokenRefreshed = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setAccessToken(customEvent.detail);
+      }
+    };
+    window.addEventListener('sts_token_refreshed', handleTokenRefreshed);
+
+    return () => {
+      window.removeEventListener('sts_token_refreshed', handleTokenRefreshed);
+    };
   }, []);
 
   // 2. Load tickets when session mode is active
