@@ -797,6 +797,7 @@ export default function TicketList({
                           {ticket.dueDate && (() => {
                             const statusInfo = getDueDateStatus(ticket.dueDate);
                             if (!statusInfo) return null;
+                            if (ticket.status === 'Done' && statusInfo.status === 'overdue') return null;
                             const colorMap = {
                               overdue: 'text-rose-700 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:text-rose-300 dark:border-rose-900/60',
                               today: 'text-amber-705 bg-amber-50 border-amber-205 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900/30',

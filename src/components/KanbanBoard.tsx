@@ -656,6 +656,7 @@ export default function KanbanBoard({
                         {ticket.dueDate && (() => {
                           const statusInfo = getDueDateStatus(ticket.dueDate);
                           if (!statusInfo) return null;
+                          if (ticket.status === 'Done' && statusInfo.status === 'overdue') return null;
                           const colorMap = {
                             overdue: 'text-rose-700 bg-rose-50/80 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60',
                             today: 'text-amber-750 bg-amber-50/80 border-amber-205 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/30',
